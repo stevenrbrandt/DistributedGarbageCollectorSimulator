@@ -11,7 +11,7 @@ public class CollectionData {
     int parent;
     private CID cid;
     int phantom_count, rcc, wait_count;
-    boolean mandate;
+    //boolean mandate;
     CID start_over, recoverCid;
     CollectorState state = CollectorState.healthy_state;
     CollectorState recv = CollectorState.healthy_state;
@@ -62,9 +62,9 @@ public class CollectionData {
     public String toString() {
         char orig = parent == 0 ? '*' : ' ';
         String cids = cid == null ? "" : cid.toString();
-        return String.format(" pc=%d rcc=%d wait=%d %s/%s parent=%d sro=%s %s%c incrRCC=%c m=%c",
+        return String.format(" pc=%d rcc=%d wait=%d %s/%s parent=%d sro=%s %s%c incrRCC=%c",
                 phantom_count, rcc, wait_count, recv, state, parent,
-                start_over, cids, orig, b(incrRCC), b(mandate));
+                start_over, cids, orig, b(incrRCC));
     }
 
     boolean phantom_flag() {
