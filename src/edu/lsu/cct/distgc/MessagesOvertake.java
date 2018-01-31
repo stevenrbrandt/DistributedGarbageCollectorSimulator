@@ -3,6 +3,7 @@ package edu.lsu.cct.distgc;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Iterator;
 
 public class MessagesOvertake implements MessageQueue {
 
@@ -10,11 +11,21 @@ public class MessagesOvertake implements MessageQueue {
     HashMap<Integer, List<Message>> masterMailbox = new HashMap<>();
 
     @Override
+    public Iterator<Message> iterator() {
+        return msgs.iterator();
+    }
+
+    @Override
     public void sendMessage(Message m) {
         msgs.add(m);
         if (m.isDone()) {
             return;
         }
+        int count = 0;
+        for (Message mm : msgs)
+            if(mm == m)
+                count++;
+        assert count == 1;
         List<Message> mailbox = masterMailbox.get(m.recipient);
         if (mailbox == null) {
             mailbox = new ArrayList<>();
@@ -56,7 +67,7 @@ public class MessagesOvertake implements MessageQueue {
         }
         return mails;
     }
-    
+
     @Override
     public Message getMessage(int nodeId, int msgId) {
     	List<Message> mailbox = masterMailbox.get(nodeId);
@@ -64,10 +75,11 @@ public class MessagesOvertake implements MessageQueue {
         for (Message msg:mailbox) {
         	if (msg.msg_id == msgId) {
         		mailbox.remove(msg);
+                msgs.remove(msg);
         		return msg;
         	}
         }
-        return null;   	
+        return null;
     }
 
 

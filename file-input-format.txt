@@ -1,0 +1,9 @@
+create 1
+create 2
+edge 1 2
+edge 2 1
+unroot 2
+runmsg 2 5
+runmsg 1 6
+deledge 1 6
+runall

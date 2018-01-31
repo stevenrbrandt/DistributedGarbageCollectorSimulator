@@ -27,7 +27,7 @@ public abstract class Message {
     static int messageCount = 0;
 
     public void run() {
-        assert !done;
+        assert !done : this;
         done = true;
         Node r = Node.nodeMap.get(recipient);
         if (Here.VERBOSE) {
@@ -201,6 +201,7 @@ public abstract class Message {
      * and make sure they are correct.
      */
     static void checkCounts() {
+        System.out.println("======Summary======");
         Map<Integer, Node.Counts> counts = new HashMap<>();
         for (Root root : Root.roots) {
             Node node = root.get();
@@ -281,15 +282,15 @@ public abstract class Message {
         Message.markAndSweep();
         return rcount;
     }
-    
-    /** 
+
+    /**
      * Execute msg specified
      */
     public static void runMsg(int nodeId, int msgId) {
     	Message msg = msgs.getMessage(nodeId, msgId);
     	msg.run();
     }
-    
+
     /**
      * Performs post collection checks
      */
@@ -359,4 +360,13 @@ public abstract class Message {
     public static int count() {
         return msgs.size();
     }
+
+    public String toString() {
+        String nm = getClass().getName();
+        int n = nm.lastIndexOf('.');
+        nm = nm.substring(n+1);
+        return String.format("%s mid=%d %d->%d (runmsg %d %d)",nm,msg_id,sender,recipient,recipient,msg_id);
+    }
+
+    public boolean done() { return done; }
 }

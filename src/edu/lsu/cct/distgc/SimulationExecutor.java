@@ -33,6 +33,16 @@ public final class SimulationExecutor {
             }
             // Close the input stream
             br.close();
+            System.out.println("[=============Pending=Messages==============]");
+            int count = 0;
+            for(Message m : Message.msgs) {
+                if(!m.done()) {
+                    System.out.println("m="+m);
+                    count++;
+                }
+            }
+            if(count == 0)
+                System.out.println("None");
         } catch (Exception e) {
             System.out.println("Exception is " + e.getMessage());
             e.printStackTrace(new PrintStream(System.out));
@@ -69,19 +79,19 @@ public final class SimulationExecutor {
     public void processRunAll(String[] tokens, int lineNo) {
         Message.runAll();
     }
-    
+
 	public void processCheckStat(String[] tokens, int lineNo) {
 		Message.checkStat();
 	}
 
-    
+
     // runmsg <nodeId> <MsgId> lines are parsed, checked and executed.
 	public void processMsgId(String[] tokens, int lineNo) {
         assert tokens.length == 3 : "Line: " + lineNo
                 + " error. runmsg <nodeId> <msgId> is the syntaxt for the statement.";
         int nodeId = Integer.parseInt(tokens[1]);
         int msgId = Integer.parseInt(tokens[2]);
-        assert nodeId > 0 && msgId >= 0 : "Line: " + lineNo 
+        assert nodeId > 0 && msgId >= 0 : "Line: " + lineNo
         		+ " error. nodeId or msg Id must be positive number.";
         Message.runMsg(nodeId, msgId);
 	}
