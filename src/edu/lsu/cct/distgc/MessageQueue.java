@@ -9,6 +9,8 @@ public interface MessageQueue {
     public Message nextToRun();
 
     public List<Message> nextRoundToRun();
+    
+    public Message getMessage(int nodeId, int msgId);
 
     public int size();
 }

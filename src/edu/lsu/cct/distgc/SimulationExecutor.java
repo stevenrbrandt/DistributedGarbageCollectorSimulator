@@ -69,6 +69,23 @@ public final class SimulationExecutor {
     public void processRunAll(String[] tokens, int lineNo) {
         Message.runAll();
     }
+    
+	public void processCheckStat(String[] tokens, int lineNo) {
+		Message.checkStat();
+	}
+
+    
+    // runmsg <nodeId> <MsgId> lines are parsed, checked and executed.
+	public void processMsgId(String[] tokens, int lineNo) {
+        assert tokens.length == 3 : "Line: " + lineNo
+                + " error. runmsg <nodeId> <msgId> is the syntaxt for the statement.";
+        int nodeId = Integer.parseInt(tokens[1]);
+        int msgId = Integer.parseInt(tokens[2]);
+        assert nodeId > 0 && msgId >= 0 : "Line: " + lineNo 
+        		+ " error. nodeId or msg Id must be positive number.";
+        Message.runMsg(nodeId, msgId);
+	}
+
 
     // EDGE <source-node> <dest-node> lines are parsed, checked and executed.
     public void createEdge(String[] tokens, int lineNo) {
@@ -122,6 +139,12 @@ public final class SimulationExecutor {
             case "runall":
                 processRunAll(tokens, lineNo);
                 break;
+            case "runmsg":
+            	processMsgId(tokens, lineNo);
+            	break;
+            case "checkstat":
+            	processCheckStat(tokens, lineNo);
+            	break;
             case "edge":
                 createEdge(tokens, lineNo);
                 break;

@@ -56,6 +56,20 @@ public class MessagesOvertake implements MessageQueue {
         }
         return mails;
     }
+    
+    @Override
+    public Message getMessage(int nodeId, int msgId) {
+    	List<Message> mailbox = masterMailbox.get(nodeId);
+        assert mailbox != null : "Mailbox cannot be null";
+        for (Message msg:mailbox) {
+        	if (msg.msg_id == msgId) {
+        		mailbox.remove(msg);
+        		return msg;
+        	}
+        }
+        return null;   	
+    }
+
 
     @Override
     public int size() {

@@ -281,6 +281,22 @@ public abstract class Message {
         Message.markAndSweep();
         return rcount;
     }
+    
+    /** 
+     * Execute msg specified
+     */
+    public static void runMsg(int nodeId, int msgId) {
+    	Message msg = msgs.getMessage(nodeId, msgId);
+    	msg.run();
+    }
+    
+    /**
+     * Performs post collection checks
+     */
+    public static void checkStat(){
+    	Message.checkCounts();
+    	Message.markAndSweep();
+    }
 
     private static void markAndSweep() {
         for (Node node : Node.nodeMap.values()) {
