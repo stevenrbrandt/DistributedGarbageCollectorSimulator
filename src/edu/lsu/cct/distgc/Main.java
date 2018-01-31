@@ -183,7 +183,6 @@ public class Main {
 
     static void shuffle(List<Root> roots) {
         if (System.getProperty("shuffle", "yes").equalsIgnoreCase("yes")) {
-            assert false;
             for (int i = roots.size() - 1; i > 0; i--) {
                 int n = Message.RAND.nextInt(i + 1);
                 Root r1 = roots.get(i);
