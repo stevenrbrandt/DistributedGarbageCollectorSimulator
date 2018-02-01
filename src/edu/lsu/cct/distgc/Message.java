@@ -201,7 +201,7 @@ public abstract class Message {
      * and make sure they are correct.
      */
     static void checkCounts() {
-        System.out.println("======Summary======");
+        Here.bar("Counts");
         Map<Integer, Node.Counts> counts = new HashMap<>();
         for (Root root : Root.roots) {
             Node node = root.get();
@@ -214,16 +214,15 @@ public abstract class Message {
             }
             c.strong++;
             // c.marked=true;
-            System.out.println("root => " + node.id + " c=" + c);
+            System.out.println("id=" + node.id + " " + c);
             Message.checkCounts(counts, node);
         }
-        System.out.println("==State of nodes==");
+        Here.bar("State of nodes");
         for (Node node : Node.nodeMap.values()) {
             if (node.cd == null || node.cd.state != CollectorState.dead_state) {
                 System.out.println(node);
             }
         }
-        System.out.println("==================");
         for (Node node : Node.nodeMap.values()) {
             Node.Counts c = counts.get(node.id);
             if (node.cd != null) {
@@ -272,7 +271,7 @@ public abstract class Message {
         int mcount = messageCount;
         int edges = edgeCount();
 
-        Here.log("Run All");
+        Here.bar("Collection Summary");
         while (runOne())
 			;
         System.out.printf("Number of edges: %d%n", edges);
@@ -288,6 +287,8 @@ public abstract class Message {
      */
     public static void runMsg(int nodeId, int msgId) {
     	Message msg = msgs.getMessage(nodeId, msgId);
+        if(msg == null)
+            throw new NoSuchMessage();
     	msg.run();
     }
 
@@ -369,4 +370,6 @@ public abstract class Message {
     }
 
     public boolean done() { return done; }
+
+    public abstract String shortName();
 }

@@ -227,7 +227,7 @@ public class Main {
         Message.runAll();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         try {
             // Require that assertions are enabled
             assert false;

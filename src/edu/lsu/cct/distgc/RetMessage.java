@@ -16,4 +16,9 @@ public class RetMessage extends Message {
         n.ret(start_recovery_over);
     }
 
+    @Override
+    public String shortName() {
+        return "Ret";
+    }
+
 }

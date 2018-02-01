@@ -24,4 +24,9 @@ public class IncrMessage extends Message {
     public String getName() {
         return String.format("Incr:w=%d", weight);
     }
+
+    @Override
+    public String shortName() {
+        return "Incr";
+    }
 }

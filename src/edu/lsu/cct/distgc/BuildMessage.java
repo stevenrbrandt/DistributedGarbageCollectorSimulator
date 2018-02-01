@@ -26,6 +26,11 @@ public class BuildMessage extends Message implements CidMessage {
 
     @Override
     public String getName() {
-        return String.format("Build:w=%d", w);
+        return String.format("Build", w);
+    }
+
+    @Override
+    public String shortName() {
+        return "Build";
     }
 }

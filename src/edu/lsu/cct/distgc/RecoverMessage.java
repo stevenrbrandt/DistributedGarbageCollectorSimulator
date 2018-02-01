@@ -20,4 +20,9 @@ public class RecoverMessage extends Message implements CidMessage {
         n.recover(cid, sender, incrRCC);
     }
 
+    @Override
+    public String shortName() {
+        return "Recov";
+    }
+
 }

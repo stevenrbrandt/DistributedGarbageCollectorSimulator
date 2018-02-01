@@ -15,4 +15,9 @@ public class PlagueMessage extends Message {
         n.plague(sender, cid, true);
     }
 
+    @Override
+    public String shortName() {
+        return "Plague";
+    }
+
 }

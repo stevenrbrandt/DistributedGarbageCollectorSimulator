@@ -24,4 +24,9 @@ public class PhantomizeMessage extends Message implements CidMessage {
     public String getName() {
         return String.format("Phan:w=%d", weight);
     }
+
+    @Override
+    public String shortName() {
+        return "Phan";
+    }
 }

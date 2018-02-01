@@ -22,4 +22,9 @@ public class ClaimMessage extends Message implements CidMessage {
     public String getName() {
         return String.format("Claim");
     }
+
+    @Override
+    public String shortName() {
+        return "Claim";
+    }
 }

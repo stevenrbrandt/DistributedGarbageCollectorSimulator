@@ -25,4 +25,9 @@ public class DecrMessage extends Message {
     public String getName() {
         return String.format("Decr:w=%d", weight);
     }
+
+    @Override
+    public String shortName() {
+        return "Decr";
+    }
 }

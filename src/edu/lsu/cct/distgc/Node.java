@@ -84,7 +84,7 @@ public class Node {
         boolean marked;
 
         public String toString() {
-            return "Counts(s=" + strong + "/w=" + weak + "/m=" + marked + ")";
+            return "strong=" + strong + ", weak=" + weak + ", marked=" + marked;
         }
     }
 

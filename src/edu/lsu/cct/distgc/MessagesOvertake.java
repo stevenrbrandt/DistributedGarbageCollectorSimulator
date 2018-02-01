@@ -36,13 +36,19 @@ public class MessagesOvertake implements MessageQueue {
         }
     }
 
+    void removeMsg(Message m) {
+        msgs.remove(m);
+        masterMailbox.get(m.recipient).remove(m);
+    }
+
     @Override
     public Message nextToRun() {
         if (msgs.isEmpty()) {
             return null;
         }
         int n = Message.RAND.nextInt(msgs.size());
-        Message m = msgs.remove(n);
+        Message m = msgs.get(n);
+        removeMsg(m);
         return m;
     }
 
@@ -56,7 +62,7 @@ public class MessagesOvertake implements MessageQueue {
             while (mailbox.size() > 0) {
                 if (numMails > 0) {
                     int randomNum = Message.RAND.nextInt(0, numMails);
-                    Message toBeAdded = mailbox.remove(randomNum);
+                    Message toBeAdded = mailbox.get(randomNum);
                     if (!toBeAdded.isDone()) {
                         mails.add(toBeAdded);
                         break;
@@ -74,8 +80,7 @@ public class MessagesOvertake implements MessageQueue {
         assert mailbox != null : "Mailbox cannot be null";
         for (Message msg:mailbox) {
         	if (msg.msg_id == msgId) {
-        		mailbox.remove(msg);
-                msgs.remove(msg);
+                removeMsg(msg);
         		return msg;
         	}
         }
