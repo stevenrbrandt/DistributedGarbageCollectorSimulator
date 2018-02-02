@@ -50,7 +50,7 @@ public final class SimulationExecutor {
         int count = 0;
         for(Message m : Message.msgs) {
             if(!m.done()) {
-                System.out.println("m="+m.shortName()+" "+m.sender+"->"+m.recipient+" (runmsg "+m.recipient+" "+m.msg_id+")");
+                System.out.println("m="+m+" node: "+Node.nodeMap.get(m.recipient));
                 count++;
             }
         }
@@ -129,10 +129,10 @@ public final class SimulationExecutor {
         int destNode = Integer.parseInt(tokens[2]);
         assert sourceNode > 0 && destNode > 0 : "Line: " + lineNo
                 + " error. source or dest node cannot be root node (0) or negative number";
-        Node source = findFromRoot(sourceNode);
+        Node source = roots.get(sourceNode).get();
         if(source == null)
             throw new RuntimeException("Node is dead: "+sourceNode);
-        Node dest = findFromRoot(destNode);
+        Node dest = roots.get(destNode).get();
         if(dest == null)
             throw new RuntimeException("Node is dead: "+destNode);
         source.createEdge(destNode,true);
@@ -154,9 +154,9 @@ public final class SimulationExecutor {
         int destNode = Integer.parseInt(tokens[2]);
         assert sourceNode > 0 && destNode > 0 : "Line: " + lineNo
                 + " error. source or dest node cannot be root node (0) or negative number";
-        Node source = findFromRoot(sourceNode);
+        Node source = roots.get(sourceNode).get();
         if(source == null)
-            throw new RuntimeException("Node id=" + sourceNode + " is not reachable from the root");
+            throw new RuntimeException("No edge from a root to node id=" + sourceNode + ": line="+lineNo);
         boolean success = source.removeEdge(destNode, true);
         assert success : "Remove non-existent edge";
     }
@@ -235,39 +235,4 @@ public final class SimulationExecutor {
     }
 
     private HashMap<Integer, Root> roots;
-
-    Node findFromRoot(int needle) {
-        for (Node node : Node.nodeMap.values()) {
-            node.marked = false;
-        }
-        Node n = null;
-        for (Root root : roots.values()) {
-            Node node = root.get();
-            if(node != null) {
-                n = findFromRoot(node,needle);
-                if(n != null) {
-                    break;
-                }
-            }
-        }
-        return n;
-    }
-    Node findFromRoot(Node node,int needle) {
-        if(node.marked)
-            return null;
-        node.marked = true;
-        if(node.id == needle) {
-            return node;
-        }
-        for(Integer edge : node.edges) {
-            if(edge != null) {
-                Node edgeNode = Node.nodeMap.get(edge);
-                Node n = findFromRoot(edgeNode,needle);
-                if(n != null) {
-                    return n;
-                }
-            }
-        }
-        return null;
-    }
 }

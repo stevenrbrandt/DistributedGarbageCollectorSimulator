@@ -21,5 +21,4 @@ Ret 4->2
 Ret 1->2
 
 deledge 1->3
-deledge 2->3
 runall

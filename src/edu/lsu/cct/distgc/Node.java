@@ -108,12 +108,7 @@ public class Node {
     }
 
     public boolean has_edges() {
-        for (Integer edge : edges) {
-            if (edge != null) {
-                return true;
-            }
-        }
-        return false;
+        return edges.size() > 0;
     }
 
     public int createEdge(int rid) {
@@ -121,18 +116,7 @@ public class Node {
     }
 
     public int createEdge(int rid,boolean runNow) {
-        int edgeNum = -1;
-        for (int e = 0; e < edges.size(); e++) {
-            // Find a free slot
-            if (edges.get(e) == null) {
-                edges.set(e, rid);
-                edgeNum = e;
-            }
-        }
-        if (edgeNum < 0) {
-            edgeNum = edges.size();
-            edges.add(rid);
-        }
+        edges.add(rid);
         Message m = null;
         if (cd != null) {
             m = new IncrMessage(id, rid, weight, phantom_flag(), cd.getCid());
@@ -143,7 +127,7 @@ public class Node {
             m.run();
         else
             m.runMe();
-        return edgeNum;
+        return rid;
     }
 
     boolean has_no_outgoing_edges() {
@@ -178,7 +162,7 @@ public class Node {
                 } else {
                     cd = new CollectionData(id);
                     toggle();
-                    PhantomizeAll();
+                    PhantomizeAll(sender);
                 }
             } else {
                 delete_outgoing_edges();
@@ -235,27 +219,23 @@ public class Node {
     public boolean removeEdge(int rid) {
         return removeEdge(rid,false);
     }
-    public boolean removeEdge(int rid,boolean runNow) {
-        for (int i = 0; i < edges.size(); i++) {
-            Integer edge = edges.get(i);
-            if (edge == null || edge != rid) {
-                continue;
-            } else {
-                boolean ph = false;
-                CID mcid = null;
-                if(phantom_flag()) {
-                    ph = true;
-                    mcid = cd.getCid();
-                }
-                Here.log("ph="+ph+" mcid="+mcid+" "+this);
-                Message m = new DecrMessage(id, edge, weight, ph, mcid);
-                if(runNow)
-                    m.run();
-                else
-                    m.queueMe();
-                edges.set(i, null);
-                return true;
+    public boolean removeEdge(Integer edge,boolean runNow) {
+        int i = edges.indexOf(edge);
+        if(i >= 0) {
+            boolean ph = false;
+            CID mcid = null;
+            if(phantom_flag()) {
+                ph = true;
+                mcid = cd.getCid();
             }
+            Here.log("ph="+ph+" mcid="+mcid+" "+this);
+            Message m = new DecrMessage(id, edge, weight, ph, mcid);
+            if(runNow)
+                m.run();
+            else
+                m.queueMe();
+            edges.remove(edge);
+            return true;
         }
         return false;
     }
@@ -263,9 +243,6 @@ public class Node {
     void delete_outgoing_edges() {
         for (int i = 0; i < edges.size(); i++) {
             Integer edge = edges.get(i);
-            if (edge == null) {
-                continue;
-            }
             Message m = null;
             if (cd == null) {
                 m = new DecrMessage(id, edge, weight, false, null);
@@ -273,12 +250,12 @@ public class Node {
                 m = new DecrMessage(id, edge, weight, phantom_flag(), cd.getCid());
             }
             m.runMe();
-            edges.set(i, null);
         }
+        edges.clear();
     }
 
     // \Procedure{PhantomizeAll}{sender_weight,is_phantom_edge,sender_cid}
-    private void PhantomizeAll() {
+    private void PhantomizeAll(int sender) {
         assert strong_count == 0 || lstate.old_weight < weight;
         if (phantom_flag()) {
             ClaimAll();
@@ -288,16 +265,23 @@ public class Node {
         assert cd.state == CollectorState.healthy_state || cd.state == CollectorState.build_state;
         cd.state = CollectorState.phantom_state;
         for (Integer edge : edges) { // xx(For): each edge
-            if (edge != null) { // xskip
-                Message m = new PhantomizeMessage(id, edge, lstate.old_weight, cd.getCid());
-                m.queueMe();
-                cd.wait_count++;
-            }
+            Message m = new PhantomizeMessage(id, edge, lstate.old_weight, cd.getCid());
+            m.queueMe();
+            cd.wait_count++;
         }
         if (cd.wait_count == 0) {
+            cd.state = CollectorState.healthy_state;
             return_to_parent();
+            if(strong_count > 0 && cd.phantom_count == 0 && cd.rcc == 0) {
+                Here.log();
+                return_to_sender(sender);
+                cd = null;
+            } else {
+                cd.incrRCC = false;
+            }
+        } else {
+            cd.incrRCC = false;
         }
-        cd.incrRCC = false;
     }
 
     // \Procedure{Claim}{sender,sender_cid}
@@ -320,11 +304,9 @@ public class Node {
         assert phantom_flag() : this.toString();
         cd.state = CollectorState.phantom_state;
         for (Integer edge : edges) { // xx(For): each edge
-            if (edge != null) { // xskip
-                Message m = new ClaimMessage(id, edge, cd.getCid());
-                m.queueMe();
-                cd.wait_count++;
-            }
+            Message m = new ClaimMessage(id, edge, cd.getCid());
+            m.queueMe();
+            cd.wait_count++;
         }
         if (cd.wait_count == 0) {
             return_to_parent();
@@ -369,11 +351,9 @@ public class Node {
         cd.state = CollectorState.recover_state;
         cd.recoverCid = cd.getCid();
         for (Integer edge : edges) { // xx(For): each edge
-            if (edge != null) { // xskip
-                cd.wait_count++;
-                Message m = new RecoverMessage(id, edge, cd.getCid(), incrRCC);
-                m.queueMe();
-            }
+            cd.wait_count++;
+            Message m = new RecoverMessage(id, edge, cd.getCid(), incrRCC);
+            m.queueMe();
         }
         cd.incrRCC = false;
         if (ready()) {
@@ -444,11 +424,9 @@ public class Node {
         cd.recoverCid = null;
         cd.state = CollectorState.build_state;
         for (Integer edge : edges) { // xx(For): for each
-            if (edge != null) {
-                cd.wait_count++;
-                Message m = new BuildMessage(id, edge, weight, cd.getCid(), cd.incrRCC, lstate.parent_was_set, decrRCC);
-                m.queueMe();
-            }
+            cd.wait_count++;
+            Message m = new BuildMessage(id, edge, weight, cd.getCid(), cd.incrRCC, lstate.parent_was_set, decrRCC);
+            m.queueMe();
         }
         cd.incrRCC = false;
         if (ready()) {
@@ -488,8 +466,8 @@ public class Node {
                 m.queueMe();
             } // xskip
             del_edges.add(edge); // xx: set edge to null
-            edges.set(i, null); // xskip
         }
+        edges.clear();
         if (strong_count == 0 && weak_count == 0 && cd.phantom_count == 0 && cd.wait_count == 0) {
             cd.state = CollectorState.dead_state;
         } else {
@@ -533,7 +511,7 @@ public class Node {
                     BuildAll(-1);
                 } else {
                     toggle();
-                    PhantomizeAll();
+                    PhantomizeAll(-1);
                 }
             } else {
                 action(-1);
@@ -587,8 +565,9 @@ public class Node {
 
     // rocedure{Return_to_sender}{start_over_cid}
     private void return_to_sender(int sender) {
+        Here.log();
         if (cd == null) {
-            ; // xx: pass
+            // xx: pass
         } else if (cd != null && lstate.original_parent != cd.parent && cd.parent == sender && sender != -1) {
             // xx: pass
         } else if (lstate.returned_to_parent && cd != null && cd.parent == sender) {
@@ -610,9 +589,7 @@ public class Node {
         int count = 0;
         List<Integer> li = new ArrayList<>();
         for (Integer edge : edges) {
-            if (edge != null) {
-                li.add(edge);
-            }
+            li.add(edge);
         }
         return li;
     }
@@ -706,12 +683,12 @@ public class Node {
         toggle();
         assert cd.wait_count == 0;
         if (lstate.old_weight < weight) {
-            PhantomizeAll();
+            PhantomizeAll(sender);
         } else if (is_initiator()) {
             if (ready()) {
                 if (cd.state == CollectorState.healthy_state) {
                     if (!phantom_flag() && lstate.old_weight < weight || strong_count == 0) {
-                        PhantomizeAll();
+                        PhantomizeAll(sender);
                     }
                 } else if (cd.state == CollectorState.phantom_state) {
                     if (strong_count > 0) {
@@ -740,10 +717,10 @@ public class Node {
                     ClaimAll();
                 }
             } else if (strong_count == 0) {
-                PhantomizeAll();
+                PhantomizeAll(sender);
             } else if (!phantom_flag()) {
                 if (strong_count == 0) {
-                    PhantomizeAll();
+                    PhantomizeAll(sender);
                 } else { // xskip
                 }
             } else { // xskip
@@ -751,7 +728,7 @@ public class Node {
         } else if (cd.recv == CollectorState.healthy_state) {
         } else if (cd.recv == CollectorState.phantom_state) {
             if (!phantom_flag() && (lstate.old_weight < weight || strong_count == 0)) {
-                PhantomizeAll();
+                PhantomizeAll(sender);
             } else if (cd.incrRCC && phantom_flag()) {
                 ClaimAll();
             } else {
@@ -764,12 +741,12 @@ public class Node {
                 } else if (phantom_flag()) {
                     RecoverAll();
                 } else {
-                    PhantomizeAll();
+                    PhantomizeAll(sender);
                 }
             } else if (strong_count > 0) {
                 BuildAll(sender);
             } else if (weak_count > 0) {
-                PhantomizeAll();
+                PhantomizeAll(sender);
             } else {
                 return_to_parent();
             }

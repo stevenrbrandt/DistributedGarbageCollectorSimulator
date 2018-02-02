@@ -363,10 +363,12 @@ public abstract class Message {
     }
 
     public String toString() {
-        String nm = getClass().getName();
-        int n = nm.lastIndexOf('.');
-        nm = nm.substring(n+1);
-        return String.format("%s mid=%d %d->%d (runmsg %d %d)",nm,msg_id,sender,recipient,recipient,msg_id);
+        if(this instanceof CidMessage) {
+            CidMessage c = (CidMessage)this;
+            return String.format("%s %d->%d (cd=%s)",shortName(),sender,recipient,c.getCid());
+        } else {
+            return String.format("%s %d->%d",shortName(),sender,recipient);
+        }
     }
 
     public boolean done() { return done; }
