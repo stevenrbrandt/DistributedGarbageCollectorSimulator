@@ -2,15 +2,15 @@ create 1
 create 2
 create 3
 
-edge 1 2
-edge 2 1
-edge 2 3
-edge 1 3
+edge 1->2
+edge 2->1
+edge 2->3
+edge 1->3
 
 unroot 3
 
 unroot 2
 
-deledge 1 3
-deledge 2 3
+deledge 1->3
+deledge 2->3
 runall

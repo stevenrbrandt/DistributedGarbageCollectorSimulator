@@ -163,17 +163,29 @@ public final class SimulationExecutor {
 
     static Pattern noopPat = Pattern.compile("^\\s*(#.*|$)");
     static Pattern msgPat  = Pattern.compile("^\\s*(\\w+)\\s*(\\d+)\\s*->\\s*(\\d+)");
+    static Pattern parse   = Pattern.compile("^\\s*(\\w+)(?:\\s+(\\d+)(?:\\s*->\\s*(\\d+)|)|)");
 
     // Parses individual lines and delegates the action to particular action
     // methods.
     public boolean parseAndPerform(String strLine, int lineNo) {
-        String[] tokens = strLine.split("\\s+");
-        assert tokens.length >= 1 : "Instruction \"" + strLine + " \" in line no " + lineNo + " is incomplete!";
+        String[] tokens = {};
+        Matcher mtok = parse.matcher(strLine);
+        if(mtok.matches()) {
+            int count = 0;
+            for(int i=0;i<mtok.groupCount();i++)
+                if(mtok.group(i+1) != null)
+                    count++;
+            tokens = new String[count];
+            for(int i=0;i<count;i++) {
+                tokens[i] = mtok.group(i+1);
+            }
+        } else if(noopPat.matcher(strLine).matches()) {
+            tokens = new String[]{"#"};
+        } else {
+            throw new RuntimeException(strLine);
+        }
         switch (tokens[0].toLowerCase()) {
             case "#":
-                // Ignore line as comment.
-                break;
-            case "//":
                 // Ignore line as comment.
                 break;
             case "CONGESTmode":
@@ -186,11 +198,11 @@ public final class SimulationExecutor {
                 processRunAll(tokens, lineNo);
                 break;
             case "runmsg":
-            	processMsgId(tokens, lineNo);
-            	break;
+                processMsgId(tokens, lineNo);
+                break;
             case "checkstat":
-            	processCheckStat(tokens, lineNo);
-            	break;
+                processCheckStat(tokens, lineNo);
+                break;
             case "edge":
                 createEdge(tokens, lineNo);
                 break;
@@ -201,30 +213,21 @@ public final class SimulationExecutor {
                 unRootNode(tokens, lineNo);
                 break;
             default:
-                if(noopPat.matcher(strLine).matches()) {
-                    ;
-                } else {
-                    Matcher m = msgPat.matcher(strLine);
-                    if(m.matches()) {
-                        Message found = null;
-                        for(Message msg : Message.msgs) {
-                            if(msg.shortName().equals(m.group(1))
-                                && msg.sender == Integer.parseInt(m.group(2))
-                                && msg.recipient == Integer.parseInt(m.group(3)))
-                            {
-                                if(found != null) throw new RuntimeException("Non-unique message specifier: "+strLine+" at line no: "+lineNo);
-                                found = msg;
-                            }
-                        }
-                        if(found == null) throw new RuntimeException("No such message: "+strLine+" at line no: "+lineNo);
-                        try {
-                            Message.runMsg(found.recipient,found.msg_id);
-                        } catch(NoSuchMessage nsm) {
-                            throw new NoSuchMessage(strLine);
-                        }
-                    } else {
-                        throw new RuntimeException("Default no-op action exectued for line " + strLine + " at line no: " + lineNo);
+                Message found = null;
+                for(Message msg : Message.msgs) {
+                    if(msg.shortName().equals(tokens[0])
+                            && msg.sender == Integer.parseInt(tokens[1])
+                            && msg.recipient == Integer.parseInt(tokens[2]))
+                    {
+                        if(found != null) throw new RuntimeException("Non-unique message specifier: "+strLine+" at line no: "+lineNo);
+                        found = msg;
                     }
+                }
+                if(found == null) throw new RuntimeException("Invalid instruction: "+strLine+" at line no: "+lineNo);
+                try {
+                    Message.runMsg(found.recipient,found.msg_id);
+                } catch(NoSuchMessage nsm) {
+                    throw new NoSuchMessage(strLine);
                 }
         }
 
