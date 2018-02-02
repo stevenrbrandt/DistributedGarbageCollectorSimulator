@@ -131,6 +131,10 @@ public abstract class Message {
      * Send the current message and wait until it completes.
      */
     public void runMe() {
+        // We wish to avoid random selecting and running of
+        // messages when running from a list of user-supplied
+        // file commands. This helps ensure we don't.
+        assert !"file-input".equals(System.getProperty("test"));
         send(this);
         if (CONGEST_mode) {
             while (!isDone()) {

@@ -247,6 +247,11 @@ public class Main {
         System.out.println("size=" + size);
         int sizeI = Integer.parseInt(size);
         if (test.equals("file-input")) {
+            // Make the behavior of files
+            // predictable and repeatable.
+            // If the user wants a different
+            // seed, they can set it.
+            Message.RAND.setSeed(0);
             System.out.println("File Input is chosen.");
             System.out.println("Input file location: " + fileloc);
             SimulationExecutor sim = new SimulationExecutor(fileloc);

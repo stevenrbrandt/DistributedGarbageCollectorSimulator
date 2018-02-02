@@ -10,6 +10,9 @@ public class Root {
     int index = -1;
 
     Root(Integer... forceId) {
+        this(false,forceId);
+    }
+    Root(boolean runNow,Integer... forceId) {
         roots.add(this);
         if (forceId.length == 0) {
             root = new Node();
@@ -36,7 +39,10 @@ public class Root {
         }
 
         Message m = new IncrMessage(0, root.id, 0, false, null);
-        m.runMe();
+        if(runNow)
+            m.run();
+        else
+            m.runMe();
     }
 
     public void set(Node node) {

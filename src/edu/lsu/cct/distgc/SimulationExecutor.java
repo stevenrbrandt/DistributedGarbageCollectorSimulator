@@ -72,7 +72,7 @@ public final class SimulationExecutor {
         assert tokens.length == 2 : " Line : " + lineNo + " error. Create statement syntax is CREATE <number> .";
         int id = Integer.parseInt(tokens[1]);
         assert id > 0 : " Line : " + lineNo + " error. Node Id cannot be less 0 or negative number. ";
-        roots.put(id, new Root(id));
+        roots.put(id, new Root(true,id));
         actionFinished();
     }
 
@@ -148,7 +148,7 @@ public final class SimulationExecutor {
                 throw new RuntimeException(
                     "To add a root edge to a Node N, there must be a node M such that 0 -> M -> N. line="+lineNo);
             if(r == null) r = new Root();
-            r.set(Node.nodeMap.get(destNode));
+            r.set(Node.nodeMap.get(destNode),true);
             roots.put(destNode,r);
         } else if(sourceNode > 0) {
             assert destNode > 0 : "Line: " + lineNo
@@ -235,6 +235,9 @@ public final class SimulationExecutor {
                 break;
             case "deledge":
                 deleteEdge(tokens, lineNo);
+                break;
+            case "seed":
+                Message.RAND.setSeed(Integer.parseInt(tokens[1]));
                 break;
             case "unroot":
                 unRootNode(tokens, lineNo);
