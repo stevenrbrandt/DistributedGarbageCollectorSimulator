@@ -129,8 +129,9 @@ public final class SimulationExecutor {
         int destNode = Integer.parseInt(tokens[2]);
         if(sourceNode == 0) {
             boolean found = false;
-            if(roots.get(destNode) != null)
-                throw new RuntimeException("A root edge to node to "+sourceNode+" already exists: line="+lineNo);
+            Root r = roots.get(destNode);
+            if(r != null && r.get() != null)
+                throw new RuntimeException("A root edge to node to "+destNode+" already exists: line="+lineNo);
             for(Root root : roots.values()) {
                 Node node = root.get();
                 if(node != null) {
@@ -146,7 +147,7 @@ public final class SimulationExecutor {
             if(!found)
                 throw new RuntimeException(
                     "To add a root edge to a Node N, there must be a node M such that 0 -> M -> N. line="+lineNo);
-            Root r = new Root();
+            if(r == null) r = new Root();
             r.set(Node.nodeMap.get(destNode));
             roots.put(destNode,r);
         } else if(sourceNode > 0) {
