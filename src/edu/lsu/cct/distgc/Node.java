@@ -117,6 +117,10 @@ public class Node {
     }
 
     public int createEdge(int rid) {
+        return createEdge(rid,false);
+    }
+
+    public int createEdge(int rid,boolean runNow) {
         int edgeNum = -1;
         for (int e = 0; e < edges.size(); e++) {
             // Find a free slot
@@ -135,30 +139,35 @@ public class Node {
         } else {
             m = new IncrMessage(id, rid, weight, false, null);
         }
-        m.runMe();
+        if(runNow)
+            m.run();
+        else
+            m.runMe();
         return edgeNum;
     }
 
     boolean has_no_outgoing_edges() {
-        return out() == 0;
+        return out().size() == 0;
     }
 
     // \Procedure{OnEdgeDeletion}{sender,sender_weight,is_phantom_edge,sender_cid}
     public void decr(int sender, int sender_weight, boolean phantom_flag, CID sender_cid) {
         if (phantom_flag) {
+            if(cd == null)
+                cd = new CollectionData(sender_cid);
             cd.phantom_count--;
             if (sender_cid.equals(cd.getCid())) {
                 cd.rcc--;
             }
-            assert cd.rcc >= 0;
-            assert cd.phantom_count >= cd.rcc;
-            assert cd.phantom_count >= 0;
+            //assert cd.rcc >= 0;
+            //assert cd.phantom_count >= cd.rcc;
+            //assert cd.phantom_count >= 0;
         } else if (sender_weight < weight) {
             strong_count--;
             assert strong_count >= 0;
         } else {
             weak_count--;
-            assert weak_count >= 0;
+            //assert weak_count >= 0;
         }
         if (cd == null) {
             if (strong_count > 0) {
@@ -217,16 +226,33 @@ public class Node {
             }
         }
         return_to_sender(sender);
+        if(cd.phantom_count == 0 && strong_count == 0 && weak_count == 0 && cd.wait_count == 0) {
+            delete_outgoing_edges();
+            cd.state = CollectorState.dead_state;
+        }
     }
 
     public boolean removeEdge(int rid) {
+        return removeEdge(rid,false);
+    }
+    public boolean removeEdge(int rid,boolean runNow) {
         for (int i = 0; i < edges.size(); i++) {
             Integer edge = edges.get(i);
             if (edge == null || edge != rid) {
                 continue;
             } else {
-                Message m = new DecrMessage(id, edge, weight, false, null);
-                m.queueMe();
+                boolean ph = false;
+                CID mcid = null;
+                if(phantom_flag()) {
+                    ph = true;
+                    mcid = cd.getCid();
+                }
+                Here.log("ph="+ph+" mcid="+mcid+" "+this);
+                Message m = new DecrMessage(id, edge, weight, ph, mcid);
+                if(runNow)
+                    m.run();
+                else
+                    m.queueMe();
                 edges.set(i, null);
                 return true;
             }
@@ -441,12 +467,13 @@ public class Node {
             cd.rcc--;
         }
         assert cd.phantom_count >= 0;
-        if (strong_count == 0 && weak_count == 0 && cd.phantom_count == cd.rcc && cd.wait_count == 0) {
-            InfectAll();
-            return;
-        }
-        if (ready() && cd.parent > 0) {
-            return_to_parent();
+        if(cd.phantom_count == cd.rcc && cd.wait_count == 0) {
+            if (strong_count == 0 && weak_count == 0) {
+                InfectAll();
+                return;
+            } else if(cd.phantom_count == 0) {
+                cd = null;
+            }
         }
     }
 
@@ -579,18 +606,19 @@ public class Node {
         return cd != null && cd.parent == 0;
     }
 
-    public int out() {
+    public List<Integer> out() {
         int count = 0;
+        List<Integer> li = new ArrayList<>();
         for (Integer edge : edges) {
             if (edge != null) {
-                count++;
+                li.add(edge);
             }
         }
-        return count;
+        return li;
     }
 
     public String toString() {
-        return String.format("id=%d sender_weight=%d/%d out=%d sc=%d wc=%d", id, weight, max_weight, out(), strong_count,
+        return String.format("id=%d sender_weight=%d/%d out=%s sc=%d wc=%d", id, weight, max_weight, out(), strong_count,
                 weak_count) + (cd == null ? ":" : cd.toString());
     }
 
@@ -666,7 +694,7 @@ public class Node {
                 return false;
             }
         }
-        assert cd.rcc <= cd.phantom_count : this;
+        //assert cd.rcc <= cd.phantom_count : this;
         return true;
     }
 
@@ -690,8 +718,7 @@ public class Node {
                         BuildAll(sender);
                     } else if (has_no_outgoing_edges() && weak_count == 0 && cd.phantom_count == 0) {
                         cd.state = CollectorState.dead_state;
-                    } else {
-                        assert weak_count == 0;
+                    } else if(weak_count == 0) {
                         RecoverAll();
                     }
                 } else if (cd.state == CollectorState.recover_state) {
@@ -770,6 +797,10 @@ public class Node {
 
     // \Procedure{Phantom_Flag}{}
     private boolean phantom_flag() {
-        return cd.state == CollectorState.phantom_state || cd.state == CollectorState.recover_state || cd.state == CollectorState.infected_state;
+        if(cd == null) {
+            return false;
+        } else {
+            return cd.state == CollectorState.phantom_state || cd.state == CollectorState.recover_state || cd.state == CollectorState.infected_state;
+        }
     }
 }

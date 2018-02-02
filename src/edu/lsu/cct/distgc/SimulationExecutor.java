@@ -34,15 +34,15 @@ public final class SimulationExecutor {
                 return;
             }
             lineNo++;
-            // If there's only one message in the queue,
-            // just run it. The user has no choice.
-            while(Message.msgs.size()==1) {
-                System.out.println("Running only pending message");
-                Message.runOne();
-            }
         }
         // Close the input stream
         br.close();
+        // If there's only one message in the queue,
+        // just run it. The user has no choice.
+        while(Message.msgs.size()==1) {
+            System.out.println("Running only pending message");
+            Message.runOne();
+        }
         // Show summary information if we're done
         if(Message.msgs.size()==0)
             Message.runAll();
@@ -135,7 +135,7 @@ public final class SimulationExecutor {
         Node dest = findFromRoot(destNode);
         if(dest == null)
             throw new RuntimeException("Node is dead: "+destNode);
-        source.createEdge(destNode);
+        source.createEdge(destNode,true);
         actionFinished();
     }
 
@@ -157,7 +157,7 @@ public final class SimulationExecutor {
         Node source = findFromRoot(sourceNode);
         if(source == null)
             throw new RuntimeException("Node id=" + sourceNode + " is not reachable from the root");
-        boolean success = source.removeEdge(destNode);
+        boolean success = source.removeEdge(destNode, true);
         assert success : "Remove non-existent edge";
     }
 

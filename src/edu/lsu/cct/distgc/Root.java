@@ -40,13 +40,22 @@ public class Root {
     }
 
     public void set(Node node) {
+        set(node,false);
+    }
+    public void set(Node node,boolean runNow) {
         if (node != null) {
             Message m = new IncrMessage(0, node.id, 0, false, null);
-            m.runMe();
+            if(runNow)
+                m.run();
+            else
+                m.runMe();
         }
         if (root != null) {
             Message m = new DecrMessage(0, root.id, 0, false, null);
-            m.queueMe();
+            if(runNow)
+                m.queueMe();
+            else
+                m.run();
         }
         root = node;
     }
