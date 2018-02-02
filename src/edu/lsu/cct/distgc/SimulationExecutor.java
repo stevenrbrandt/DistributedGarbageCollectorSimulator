@@ -127,15 +127,41 @@ public final class SimulationExecutor {
                 + " error. EDGE <source-node> <dest-nod> is the syntaxt for the statement.";
         int sourceNode = Integer.parseInt(tokens[1]);
         int destNode = Integer.parseInt(tokens[2]);
-        assert sourceNode > 0 && destNode > 0 : "Line: " + lineNo
-                + " error. source or dest node cannot be root node (0) or negative number";
-        Node source = roots.get(sourceNode).get();
-        if(source == null)
-            throw new RuntimeException("Node is dead: "+sourceNode);
-        Node dest = roots.get(destNode).get();
-        if(dest == null)
-            throw new RuntimeException("Node is dead: "+destNode);
-        source.createEdge(destNode,true);
+        if(sourceNode == 0) {
+            boolean found = false;
+            if(roots.get(destNode) != null)
+                throw new RuntimeException("A root edge to node to "+sourceNode+" already exists: line="+lineNo);
+            for(Root root : roots.values()) {
+                Node node = root.get();
+                if(node != null) {
+                    if(node.id == destNode)
+                        found = true;
+                    for(Integer edge : node.edges) {
+                        if(edge == destNode)
+                            found = true;
+                    }
+                    if(found) break;
+                }
+            }
+            if(!found)
+                throw new RuntimeException(
+                    "To add a root edge to a Node N, there must be a node M such that 0 -> M -> N. line="+lineNo);
+            Root r = new Root();
+            r.set(Node.nodeMap.get(destNode));
+            roots.put(destNode,r);
+        } else if(sourceNode > 0) {
+            assert destNode > 0 : "Line: " + lineNo
+                + " error. dest node cannot be root node (0) or negative number";
+            Node source = roots.get(sourceNode).get();
+            if(source == null)
+                throw new RuntimeException("Node is dead: "+sourceNode);
+            Node dest = roots.get(destNode).get();
+            if(dest == null)
+                throw new RuntimeException("Node is dead: "+destNode);
+            source.createEdge(destNode,true);
+        } else {
+            throw new RuntimeException("Source node cannot be negative. line="+lineNo);
+        }
         actionFinished();
     }
 

@@ -7,6 +7,7 @@ import java.util.Map;
 
 public class Node {
 
+    final boolean CHK_COUNTS = System.getProperty("CheckCounts","no").equals("yes");
     static Map<Integer, Node> nodeMap = new HashMap<>();
 
     LocalState lstate = new LocalState();
@@ -95,8 +96,8 @@ public class Node {
                 cd = new CollectionData(sender_cid);
             }
             cd.phantom_count++;
-            assert cd.rcc >= 0;
-            assert cd.phantom_count >= cd.rcc;
+            if(CHK_COUNTS) assert cd.rcc >= 0;
+            if(CHK_COUNTS) assert cd.phantom_count >= cd.rcc;
         } else if (sender_weight < weight) {
             strong_count++;
         } else {
@@ -143,15 +144,15 @@ public class Node {
             if (sender_cid.equals(cd.getCid())) {
                 cd.rcc--;
             }
-            //assert cd.rcc >= 0;
-            //assert cd.phantom_count >= cd.rcc;
-            //assert cd.phantom_count >= 0;
+            if(CHK_COUNTS) assert cd.rcc >= 0;
+            if(CHK_COUNTS) assert cd.phantom_count >= cd.rcc;
+            if(CHK_COUNTS) assert cd.phantom_count >= 0;
         } else if (sender_weight < weight) {
             strong_count--;
-            assert strong_count >= 0;
+            if(CHK_COUNTS) assert strong_count >= 0;
         } else {
             weak_count--;
-            //assert weak_count >= 0;
+            if(CHK_COUNTS) assert weak_count >= 0;
         }
         if (cd == null) {
             if (strong_count > 0) {
@@ -194,10 +195,10 @@ public class Node {
     public void phantomize(int sender, int w, CID sender_cid) {
         if (w < weight) {
             strong_count--;
-            assert strong_count >= 0 : "Negative strong count";
+            if(CHK_COUNTS) assert strong_count >= 0 : "Negative strong count";
         } else {
             weak_count--;
-            assert weak_count >= 0 : "Negative weak count";
+            if(CHK_COUNTS) assert weak_count >= 0 : "Negative weak count";
         }
         boolean do_action = cidCheck(sender, sender_cid);
         if (lstate.parent_was_set) {
@@ -327,8 +328,8 @@ public class Node {
         if (incrRCC && CID.equals(sender_cid, cd.getCid()) && cd.phantom_count > 0) {
             cd.rcc++;
         }
-        assert cd.rcc >= 0;
-        assert cd.phantom_count >= cd.rcc;
+        if(CHK_COUNTS) assert cd.rcc >= 0;
+        if(CHK_COUNTS) assert cd.phantom_count >= cd.rcc;
         if (do_action) {
             cd.incrRCC = false;
             if (!is_initiator()) {
@@ -368,7 +369,7 @@ public class Node {
 
         assert cd != null;
 
-        assert cd.phantom_count > 0;
+        if(CHK_COUNTS) assert cd.phantom_count > 0;
 
         // Add check on strong and weak count here. If they aren't zero,
         // changing the weights could mess everything up.
@@ -393,7 +394,7 @@ public class Node {
         }
         if (lstate.in_collection_message && decrRCC) {
             cd.rcc--;
-            assert cd.rcc >= 0;
+            if(CHK_COUNTS) assert cd.rcc >= 0;
         }
         // If a lower CID rebuilds one of our links and
         // we're ready to go, we should go.
@@ -444,7 +445,7 @@ public class Node {
         if (CID.equals(sender_cid, cd.getCid())) {
             cd.rcc--;
         }
-        assert cd.phantom_count >= 0;
+        if(CHK_COUNTS) assert cd.phantom_count >= 0;
         if(cd.phantom_count == cd.rcc && cd.wait_count == 0) {
             if (strong_count == 0 && weak_count == 0) {
                 InfectAll();
@@ -488,7 +489,7 @@ public class Node {
                 cd.setCid(new CID(mycid.majorId, mycid.objId, mycid.minorId + 1));
             }
         }
-        assert cd.wait_count >= 0 : this;
+        if(CHK_COUNTS) assert cd.wait_count >= 0 : this;
         if (cd.wait_count == 0) {
             if (start_over_cid != null && is_initiator()) {
                 if (!CID.equals(start_over_cid, cd.getCid())) {
@@ -671,7 +672,7 @@ public class Node {
                 return false;
             }
         }
-        //assert cd.rcc <= cd.phantom_count : this;
+        if(CHK_COUNTS) assert cd.rcc <= cd.phantom_count : this;
         return true;
     }
 
