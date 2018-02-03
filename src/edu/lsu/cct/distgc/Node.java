@@ -596,7 +596,7 @@ public class Node {
     }
 
     public String toString() {
-        return String.format("id=%d sender_weight=%d/%d out=%s sc=%d wc=%d", id, weight, max_weight, out(), strong_count,
+        return String.format("id=%d wt/mx=%d/%d out=%s sc=%d wc=%d", id, weight, max_weight, out(), strong_count,
                 weak_count) + (cd == null ? ":" : cd.toString());
     }
 

@@ -37,12 +37,6 @@ public final class SimulationExecutor {
         }
         // Close the input stream
         br.close();
-        // If there's only one message in the queue,
-        // just run it. The user has no choice.
-        while(Message.msgs.size()==1) {
-            System.out.println("Running only pending message");
-            Message.runOne();
-        }
         // Show summary information if we're done
         if(Message.msgs.size()==0)
             Message.runAll();

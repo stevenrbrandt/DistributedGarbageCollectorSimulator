@@ -1,0 +1,20 @@
+create 1
+create 2
+create 3
+create 4
+
+edge 1->2
+edge 2->3
+edge 3->4
+edge 4->1
+
+unroot 4
+unroot 3
+unroot 2
+
+Phan 2->3
+Phan 3->4
+Phan 4->1
+Ret 1->4
+deledge 1->2
+runall
