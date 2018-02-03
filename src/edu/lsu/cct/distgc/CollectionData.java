@@ -62,7 +62,7 @@ public class CollectionData {
     public String toString() {
         char orig = parent == 0 ? '*' : ' ';
         String cids = cid == null ? "" : cid.toString();
-        return String.format(" pc=%d rcc=%d wait=%d %s/%s parent=%d sro=%s %s%c incrRCC=%c",
+        return String.format(" p,r=%d,%d wait=%d %s/%s parent=%d sro=%s %s%c incrRCC=%c",
                 phantom_count, rcc, wait_count, recv, state, parent,
                 start_over, cids, orig, b(incrRCC));
     }

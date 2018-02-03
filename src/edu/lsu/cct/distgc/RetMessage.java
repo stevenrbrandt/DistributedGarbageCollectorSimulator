@@ -6,7 +6,6 @@ public class RetMessage extends Message {
 
     public RetMessage(int s, int r, CID start_recovery_over) {
         super(s, r);
-        assert s != r;
         action = false;
         this.start_recovery_over = start_recovery_over;
     }

@@ -1,18 +1,22 @@
 package edu.lsu.cct.distgc;
 
-public class DecrMessage extends Message {
+public class DecrMessage extends Message implements HasAdversary {
 
     int weight;
     boolean phantom_flag;
     int sender;
     CID cid;
+    Adversary adv;
 
-    public DecrMessage(int sender, int receiver, int weight, boolean phantom_flag, CID cid) {
+    public Adversary adversary() { return adv; }
+
+    public DecrMessage(int sender, int receiver, int weight, boolean phantom_flag, CID cid,Adversary adv) {
         super(sender, receiver);
         this.weight = weight;
         this.phantom_flag = phantom_flag;
         this.cid = cid;
         this.sender = sender;
+        this.adv = adv;
         action = false;
     }
 

@@ -11,6 +11,7 @@ edge 4->1
 unroot 4
 unroot 3
 unroot 2
+Decr 0->2
 
 Phan 2->3
 Phan 3->4

@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 
 public final class SimulationExecutor {
 
+    Adversary adv = new Adversary();
     public boolean CONGEST_mode = false;
 
     // Parses the input file and runs the simulation.
@@ -40,6 +41,10 @@ public final class SimulationExecutor {
         // Show summary information if we're done
         if(Message.msgs.size()==0)
             Message.runAll();
+        pendingMessages();
+    }
+
+    public void pendingMessages() {
         Here.bar("Pending Messages");
         int count = 0;
         for(Message m : Message.msgs) {
@@ -66,7 +71,7 @@ public final class SimulationExecutor {
         assert tokens.length == 2 : " Line : " + lineNo + " error. Create statement syntax is CREATE <number> .";
         int id = Integer.parseInt(tokens[1]);
         assert id > 0 : " Line : " + lineNo + " error. Node Id cannot be less 0 or negative number. ";
-        roots.put(id, new Root(true,id));
+        roots.put(id, new Root(adv,id));
         actionFinished();
     }
 
@@ -76,7 +81,7 @@ public final class SimulationExecutor {
         int id = Integer.parseInt(tokens[1]);
         assert id > 0 : " Line : " + lineNo + " error. Node Id cannot be less 0 or negative number. ";
         Root node = roots.get(id);
-        node.set(null);
+        node.set(null,adv);
     }
 
     public void processRunAll(String[] tokens, int lineNo) {
@@ -103,20 +108,8 @@ public final class SimulationExecutor {
         }
 	}
 
-    static boolean pendingDelIncr() {
-        for(Message m : Message.msgs) {
-            if(m instanceof DecrMessage)
-                return true;
-            if(m instanceof IncrMessage)
-                return true;
-        }
-        return false;
-    }
-
-
     // EDGE <source-node> <dest-node> lines are parsed, checked and executed.
     public void createEdge(String[] tokens, int lineNo) {
-        assert !pendingDelIncr() : "Cannot create a new edge while there are pending delete or create messages: line="+lineNo;
         assert tokens.length == 3 : "Line: " + lineNo
                 + " error. EDGE <source-node> <dest-nod> is the syntaxt for the statement.";
         int sourceNode = Integer.parseInt(tokens[1]);
@@ -141,8 +134,8 @@ public final class SimulationExecutor {
             if(!found)
                 throw new RuntimeException(
                     "To add a root edge to a Node N, there must be a node M such that 0 -> M -> N. line="+lineNo);
-            if(r == null) r = new Root();
-            r.set(Node.nodeMap.get(destNode),true);
+            if(r == null) r = new Root(adv);
+            r.set(Node.nodeMap.get(destNode),adv);
             roots.put(destNode,r);
         } else if(sourceNode > 0) {
             assert destNode > 0 : "Line: " + lineNo
@@ -153,7 +146,7 @@ public final class SimulationExecutor {
             Node dest = roots.get(destNode).get();
             if(dest == null)
                 throw new RuntimeException("Node is dead: "+destNode);
-            source.createEdge(destNode,true);
+            source.createEdge(destNode,adv);
         } else {
             throw new RuntimeException("Source node cannot be negative. line="+lineNo);
         }
@@ -168,7 +161,6 @@ public final class SimulationExecutor {
 
     // DELEDGE <source-node> <dest-node> lines are parsed, checked and executed.
     public void deleteEdge(String[] tokens, int lineNo) {
-        assert !pendingDelIncr() : "Cannot delete an edge while there are pending delete or create messages: line="+lineNo;
         assert tokens.length == 3 : "Line: " + lineNo
                 + " error. EDGE <source-node> <dest-nod> is the syntaxt for the statement.";
         int sourceNode = Integer.parseInt(tokens[1]);
@@ -178,7 +170,7 @@ public final class SimulationExecutor {
         Node source = roots.get(sourceNode).get();
         if(source == null)
             throw new RuntimeException("No edge from a root to node id=" + sourceNode + ": line="+lineNo);
-        boolean success = source.removeEdge(destNode, true);
+        boolean success = source.removeEdge(destNode, adv);
         assert success : "Remove non-existent edge";
     }
 
@@ -247,7 +239,10 @@ public final class SimulationExecutor {
                         found = msg;
                     }
                 }
-                if(found == null) throw new RuntimeException("Invalid instruction: "+strLine+" at line no: "+lineNo);
+                if(found == null) {
+                    pendingMessages();
+                    throw new RuntimeException("Invalid instruction: "+strLine+" at line no: "+lineNo);
+                }
                 try {
                     Message.runMsg(found.recipient,found.msg_id);
                 } catch(NoSuchMessage nsm) {

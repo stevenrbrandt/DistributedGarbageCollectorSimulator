@@ -31,12 +31,12 @@ public abstract class Message {
         done = true;
         Node r = Node.nodeMap.get(recipient);
         if (Here.VERBOSE) {
-            System.out.printf("%s: %s%n", sendStr(), r);
+            System.out.printf("Before %s: %s%n", sendStr(), r);
         }
         r.preCheck(sender, action);
         runTask(r);
         if (Here.VERBOSE) {
-            System.out.printf("~%s: %s%n", sendStr(), r);
+            System.out.printf("After %s: %s%n", sendStr(), r);
         }
         r.postCheck(sender, action);
         messageCount++;
@@ -128,14 +128,24 @@ public abstract class Message {
     }
 
     /**
-     * Send the current message and wait until it completes.
+     * Send the current message, but don't wait for it to complete.
      */
-    public void runMe() {
-        // We wish to avoid random selecting and running of
-        // messages when running from a list of user-supplied
-        // file commands. This helps ensure we don't.
-        assert !"file-input".equals(System.getProperty("test"));
+    public void queueMe() {
+        assert sender == 0 || Node.nodeMap.get(sender) != null;
+        assert Node.nodeMap.get(recipient) != null : "No such object " + recipient;
+        if(this instanceof HasAdversary) {
+            HasAdversary ha = (HasAdversary)this;
+            Adversary adv = ha.adversary();
+            if(adv != null) {
+                if(adv.msg != null)
+                    adv.msg.mwait();
+                adv.msg = this;
+            }
+        }
         send(this);
+    }
+
+    void mwait() {
         if (CONGEST_mode) {
             while (!isDone()) {
                 boolean success = runOneRound();
@@ -147,15 +157,6 @@ public abstract class Message {
                 assert success;
             }
         }
-    }
-
-    /**
-     * Send the current message, but don't wait for it to complete.
-     */
-    public void queueMe() {
-        assert sender == 0 || Node.nodeMap.get(sender) != null;
-        assert Node.nodeMap.get(recipient) != null : "No such object " + recipient;
-        send(this);
     }
 
     static void checkCounts(Map<Integer, Node.Counts> counts, Node node) {
@@ -275,9 +276,9 @@ public abstract class Message {
         int mcount = messageCount;
         int edges = edgeCount();
 
-        Here.bar("Collection Summary");
         while (runOne())
 			;
+        Here.bar("Collection Summary");
         System.out.printf("Number of edges: %d%n", edges);
         System.out.printf("Number of rounds to converge: %d/%d%n", roundCount - rcount, roundCount);
         System.out.printf("Number of messages to converge: %d/%d%n", messageCount - mcount, messageCount);

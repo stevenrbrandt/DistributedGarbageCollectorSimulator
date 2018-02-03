@@ -13,7 +13,7 @@ public class Node {
     LocalState lstate = new LocalState();
 
     static int id_seq = 1;
-    final int id = id_seq++;
+    final int id;
 
     int weight = 1, max_weight, strong_count, weak_count;
     CollectionData cd;
@@ -26,14 +26,18 @@ public class Node {
     // verification purposes
     public boolean marked;
 
-    public Node(Integer... forceId) {
-        if (forceId.length == 0) {
-            nodeMap.put(id, this);
-        } else {
-            assert forceId.length == 1;
-            assert nodeMap.containsKey(forceId[0]) == false : "Node Id already exists!";
-            nodeMap.put(forceId[0], this);
-        }
+    public Node() {
+        while(nodeMap.get(id_seq) != null)
+            id_seq++;
+        this.id = id_seq++;
+        nodeMap.put(this.id, this);
+    }
+
+    public Node(int id) {
+        if(nodeMap.containsKey(id))
+            throw new RuntimeException("Duplicate node");
+        this.id = id;
+        nodeMap.put(this.id, this);
     }
 
     void preCheck(int sender, boolean isReturn) {
@@ -112,22 +116,15 @@ public class Node {
         return edges.size() > 0;
     }
 
-    public int createEdge(int rid) {
-        return createEdge(rid,false);
-    }
-
-    public int createEdge(int rid,boolean runNow) {
+    public int createEdge(int rid,Adversary adv) {
         edges.add(rid);
         Message m = null;
         if (cd != null) {
-            m = new IncrMessage(id, rid, weight, phantom_flag(), cd.getCid());
+            m = new IncrMessage(id, rid, weight, phantom_flag(), cd.getCid(),adv);
         } else {
-            m = new IncrMessage(id, rid, weight, false, null);
+            m = new IncrMessage(id, rid, weight, false, null,adv);
         }
-        if(runNow)
-            m.run();
-        else
-            m.runMe();
+        m.queueMe();
         return rid;
     }
 
@@ -166,7 +163,7 @@ public class Node {
                     PhantomizeAll(sender);
                 }
             } else {
-                delete_outgoing_edges();
+                delete_outgoing_edges(null);
                 cd = new CollectionData(id);
                 cd.state = CollectorState.dead_state;
             }
@@ -182,7 +179,6 @@ public class Node {
 
     // \Procedure{Toggle}{}
     private void toggle() {
-        Here.log("toggle=" + weight);
         if (weak_count > 0 && strong_count == 0) {
             Here.log("toggle");
             strong_count = weak_count;
@@ -212,15 +208,12 @@ public class Node {
         }
         return_to_sender(sender);
         if(cd.phantom_count == 0 && strong_count == 0 && weak_count == 0 && cd.wait_count == 0) {
-            delete_outgoing_edges();
+            delete_outgoing_edges(null);
             cd.state = CollectorState.dead_state;
         }
     }
 
-    public boolean removeEdge(int rid) {
-        return removeEdge(rid,false);
-    }
-    public boolean removeEdge(Integer edge,boolean runNow) {
+    public boolean removeEdge(Integer edge,Adversary adv) {
         int i = edges.indexOf(edge);
         if(i >= 0) {
             boolean ph = false;
@@ -229,28 +222,24 @@ public class Node {
                 ph = true;
                 mcid = cd.getCid();
             }
-            Here.log("ph="+ph+" mcid="+mcid+" "+this);
-            Message m = new DecrMessage(id, edge, weight, ph, mcid);
-            if(runNow)
-                m.run();
-            else
-                m.queueMe();
+            Message m = new DecrMessage(id, edge, weight, ph, mcid, adv);
+            m.queueMe();
             edges.remove(edge);
             return true;
         }
         return false;
     }
 
-    void delete_outgoing_edges() {
+    void delete_outgoing_edges(Adversary adv) {
         for (int i = 0; i < edges.size(); i++) {
             Integer edge = edges.get(i);
             Message m = null;
             if (cd == null) {
-                m = new DecrMessage(id, edge, weight, false, null);
+                m = new DecrMessage(id, edge, weight, false, null,adv);
             } else {
-                m = new DecrMessage(id, edge, weight, phantom_flag(), cd.getCid());
+                m = new DecrMessage(id, edge, weight, phantom_flag(), cd.getCid(),adv);
             }
-            m.runMe();
+            m.queueMe();
         }
         edges.clear();
     }
@@ -274,7 +263,6 @@ public class Node {
             cd.state = CollectorState.healthy_state;
             return_to_parent();
             if(strong_count > 0 && cd.phantom_count == 0 && cd.rcc == 0) {
-                Here.log();
                 return_to_sender(sender);
                 cd = null;
             } else {
@@ -566,7 +554,6 @@ public class Node {
 
     // rocedure{Return_to_sender}{start_over_cid}
     private void return_to_sender(int sender) {
-        Here.log();
         if (cd == null) {
             // xx: pass
         } else if (cd != null && lstate.original_parent != cd.parent && cd.parent == sender && sender != -1) {
@@ -596,7 +583,7 @@ public class Node {
     }
 
     public String toString() {
-        return String.format("id=%d wt/mx=%d/%d out=%s sc=%d wc=%d", id, weight, max_weight, out(), strong_count,
+        return String.format("id=%d wt/mx=%d/%d out=%s s,w=%d,%d", id, weight, max_weight, out(), strong_count,
                 weak_count) + (cd == null ? ":" : cd.toString());
     }
 
@@ -711,7 +698,11 @@ public class Node {
                     }
                 } else if (cd.phantom_count == 0) {
                     return_to_sender(sender);
-                    cd = null;
+                    if(strong_count == 0 && weak_count == 0) {
+                        PhantomizeAll(sender);
+                    } else {
+                        cd = null;
+                    }
                 }
             } else if (phantom_flag()) {
                 if (cd.incrRCC) {

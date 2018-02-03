@@ -5,6 +5,8 @@ import java.util.List;
 
 public class Main {
 
+    static Adversary adv = new Adversary();
+
     /**
      * Create a random graph and then remove the support from root edges
      *
@@ -14,7 +16,7 @@ public class Main {
     public static void RandTest(int n, boolean m1) {
         List<Root> roots = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            roots.add(new Root());
+            roots.add(new Root(adv));
         }
         shuffle(roots);
         for (int i = 0; i < 2*n; i++) {
@@ -22,15 +24,15 @@ public class Main {
             int to = Message.RAND.nextInt(n);
             Root rfrom = roots.get(from);
             Root rto = roots.get(to);
-            rfrom.get().createEdge(rto.getId());
+            rfrom.get().createEdge(rto.getId(),adv);
         }
         for (int i = 0; i < n; i++) {
             if (m1 && i + 1 == n) {
                 continue;
             }
             Root r = roots.get(i);
-            r.get().delete_outgoing_edges();
-            r.set(null);
+            r.get().delete_outgoing_edges(adv);
+            r.set(null,adv);
         }
         Message.runAll();
     }
@@ -51,7 +53,7 @@ public class Main {
                 if (i * n + j > n2) {
                     break outer;
                 }
-                grid.add(new Root());
+                grid.add(new Root(adv));
             }
         }
         shuffle(grid);
@@ -65,10 +67,10 @@ public class Main {
                 Root r2 = grid.get(n * (i - 1) + j);
                 Root r3 = grid.get(n * (i - 1) + (j - 1));
                 Root r4 = grid.get(n * i + (j - 1));
-                r1.get().createEdge(r2.getId());
-                r2.get().createEdge(r3.getId());
-                r3.get().createEdge(r4.getId());
-                r4.get().createEdge(r1.getId());
+                r1.get().createEdge(r2.getId(),adv);
+                r2.get().createEdge(r3.getId(),adv);
+                r3.get().createEdge(r4.getId(),adv);
+                r4.get().createEdge(r1.getId(),adv);
             }
         }
         outer:
@@ -80,7 +82,7 @@ public class Main {
                 if (m1 && i + 1 == n && j + 1 == n) {
                     continue;
                 }
-                grid.get(n * i + j).set(null);
+                grid.get(n * i + j).set(null,adv);
             }
         }
         Message.runAll();
@@ -97,7 +99,7 @@ public class Main {
         final int n = (int) Math.ceil(Math.sqrt(n2));
         List<Root> roots = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            roots.add(new Root());
+            roots.add(new Root(adv));
         }
         shuffle(roots);
         int count = 0;
@@ -106,7 +108,7 @@ public class Main {
             for (int i = 0; i < n; i++) {
                 Root ri = roots.get(i);
                 Root rj = roots.get((i + off) % n);
-                ri.get().createEdge(rj.getId());
+                ri.get().createEdge(rj.getId(),adv);
                 count++;
                 if (count == n2) {
                     break outer;
@@ -117,7 +119,7 @@ public class Main {
             if (m1 && i + 1 == n) {
                 continue;
             }
-            roots.get(i).set(null);
+            roots.get(i).set(null,adv);
         }
         Message.runAll();
     }
@@ -132,20 +134,20 @@ public class Main {
     public static void CycleTest(int n, boolean m1) {
         List<Root> roots = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            roots.add(new Root());
+            roots.add(new Root(adv));
         }
         shuffle(roots);
         for (int i = 0; i < n; i++) {
             int next = (i + 1) % n;
             Root r1 = roots.get(i);
             Root r2 = roots.get(next);
-            r1.get().createEdge(r2.getId());
+            r1.get().createEdge(r2.getId(),adv);
         }
         for (int i = 0; i < n; i++) {
             if (m1 && i + 1 == n) {
                 break;
             }
-            roots.get(i).set(null);
+            roots.get(i).set(null,adv);
         }
         Message.runAll();
     }
@@ -160,23 +162,23 @@ public class Main {
     public static void DoubleCycleTest(int n, boolean m1) {
         List<Root> roots = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            roots.add(new Root());
+            roots.add(new Root(adv));
         }
         shuffle(roots);
         for (int i = 0; i < n; i++) {
             int next = (i + 1) % n;
             Root r1 = roots.get(i);
             Root r2 = roots.get(next);
-            r1.get().createEdge(r2.getId());
+            r1.get().createEdge(r2.getId(),adv);
             int prev = (i + n - 1) % n;
             Root r3 = roots.get(prev);
-            r1.get().createEdge(r3.getId());
+            r1.get().createEdge(r3.getId(),adv);
         }
         for (int i = 0; i < n; i++) {
             if (m1 && i + 1 == n) {
                 break;
             }
-            roots.get(i).set(null);
+            roots.get(i).set(null,adv);
         }
         Message.runAll();
     }
@@ -203,7 +205,7 @@ public class Main {
     public static void DoublyLinkedList(int n, boolean m1) {
         List<Root> roots = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            Root r = new Root();
+            Root r = new Root(adv);
             roots.add(r);
         }
         shuffle(roots);
@@ -211,18 +213,18 @@ public class Main {
             Root r = roots.get(i);
             if (i + 1 < n) {
                 Root rnext = roots.get(i + 1);
-                r.get().createEdge(rnext.getId());
+                r.get().createEdge(rnext.getId(),adv);
             }
             if (i - 1 >= 0) {
                 Root rprev = roots.get(i - 1);
-                r.get().createEdge(rprev.getId());
+                r.get().createEdge(rprev.getId(),adv);
             }
         }
         for (int i = 0; i < n; i++) {
             if (m1 && i + 1 == n) {
                 break;
             }
-            roots.get(i).set(null);
+            roots.get(i).set(null,adv);
         }
         Message.runAll();
     }
