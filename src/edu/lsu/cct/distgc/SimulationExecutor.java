@@ -77,8 +77,7 @@ public final class SimulationExecutor {
 
     // Parses UNROOT <num> statements and performs necessary action.
     public void unRootNode(String[] tokens, int lineNo) {
-        assert tokens.length == 2 : " Line : " + lineNo + " error. unroot statement syntax is UNROOT <number> .";
-        int id = Integer.parseInt(tokens[1]);
+        int id = Integer.parseInt(tokens[2]);
         assert id > 0 : " Line : " + lineNo + " error. Node Id cannot be less 0 or negative number. ";
         Root node = roots.get(id);
         node.set(null,adv);
@@ -165,6 +164,10 @@ public final class SimulationExecutor {
                 + " error. EDGE <source-node> <dest-nod> is the syntaxt for the statement.";
         int sourceNode = Integer.parseInt(tokens[1]);
         int destNode = Integer.parseInt(tokens[2]);
+        if(sourceNode == 0) {
+            unRootNode(tokens,lineNo);
+            return;
+        }
         assert sourceNode > 0 && destNode > 0 : "Line: " + lineNo
                 + " error. source or dest node cannot be root node (0) or negative number";
         Node source = roots.get(sourceNode).get();
@@ -224,9 +227,6 @@ public final class SimulationExecutor {
                 break;
             case "seed":
                 Message.RAND.setSeed(Integer.parseInt(tokens[1]));
-                break;
-            case "unroot":
-                unRootNode(tokens, lineNo);
                 break;
             default:
                 Message found = null;

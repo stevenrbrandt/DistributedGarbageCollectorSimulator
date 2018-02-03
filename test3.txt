@@ -10,9 +10,9 @@ edge 1->3
 edge 1->4
 edge 2->4
 
-unroot 4
-unroot 3
-unroot 2
+deledge 0->4
+deledge 0->3
+deledge 0->2
 Decr 0->2
 Phan 2->4
 Phan 2->1

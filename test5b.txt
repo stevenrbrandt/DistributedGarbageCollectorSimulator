@@ -6,8 +6,8 @@ create 3
 edge 1->2
 edge 2->3
 
-unroot 3
-unroot 2
+deledge 0->3
+deledge 0->2
 runall
 
 edge 0->2
@@ -17,9 +17,9 @@ create 5
 edge 3->4
 edge 4->5
 edge 5->4
-unroot 3
-unroot 5
-unroot 4
+deledge 0->3
+deledge 0->5
+deledge 0->4
 Phan 5->4
 Decr 0->4
 Phan 4->5
@@ -29,8 +29,8 @@ Ret 4->5
 Ret 5->4
 Build 4->5
 edge 0->3
-unroot 2
+deledge 0->2
 edge 0->4
-unroot 3
+deledge 0->3
 deledge 4->5
 runall
