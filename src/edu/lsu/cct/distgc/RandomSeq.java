@@ -22,10 +22,10 @@ public class RandomSeq {
 
     public void setSeed(int seed) {
         this.seed = seed;
-        values.clear();
         next = 0;
         rand = new Random(seed);
         if (useFiles) {
+            values.clear();
             String fname = "rand" + seed + ".txt";
             File f = new File(fname);
             if (f.isFile() && f.canRead()) {
@@ -44,11 +44,11 @@ public class RandomSeq {
     }
 
     public int nextInt() {
-        if (next >= values.size()) {
-            for (int i = 0; i < 100; i++) {
-                values.add(rand.nextInt());
-            }
-            if (useFiles) {
+        if(useFiles) {
+            if (next >= values.size()) {
+                for (int i = 0; i < 100; i++) {
+                    values.add(rand.nextInt());
+                }
                 String fname = "rand" + seed + ".txt";
                 try {
                     PrintWriter pw = new PrintWriter(new File(fname));
@@ -60,8 +60,10 @@ public class RandomSeq {
                     e.printStackTrace();
                 }
             }
+            return values.get(next++);
+        } else {
+            return rand.nextInt();
         }
-        return values.get(next++);
     }
 
     public int nextInt(int max) {
