@@ -236,9 +236,7 @@ public class Main {
             throw new Error("Enable assertions");
         } catch (AssertionError ae) {
         }
-        if (System.getProperty("CONGEST_mode", "no").toLowerCase().equals("yes")) {
-            Message.CONGEST_mode = true;
-        }
+        System.out.printf("Congest Mode=%s%n", Message.CONGEST_mode ? "on" : "off");
         String test = System.getProperty("test", "cycle");
         String size = System.getProperty("size", "2");
         String fileloc = System.getProperty("fileloc", "file-input-format.txt");
@@ -247,13 +245,9 @@ public class Main {
         }
         System.out.println("test=" + test);
         System.out.println("size=" + size);
+        System.out.flush();
         int sizeI = Integer.parseInt(size);
         if (test.equals("file-input")) {
-            // Make the behavior of files
-            // predictable and repeatable.
-            // If the user wants a different
-            // seed, they can set it.
-            Message.RAND.setSeed(0);
             System.out.println("File Input is chosen.");
             System.out.println("Input file location: " + fileloc);
             SimulationExecutor sim = new SimulationExecutor(fileloc);

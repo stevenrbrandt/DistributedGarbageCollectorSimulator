@@ -1,0 +1,8 @@
+create 1->2->1
+create 3->1
+create 3->4->1
+create 4
+deledge 0->1
+deledge 3->1
+deledge 4->1
+runall

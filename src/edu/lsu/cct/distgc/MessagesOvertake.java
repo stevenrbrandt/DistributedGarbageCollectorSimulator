@@ -10,6 +10,8 @@ public class MessagesOvertake implements MessageQueue {
     List<Message> msgs = new ArrayList<>();
     HashMap<Integer, List<Message>> masterMailbox = new HashMap<>();
 
+    public MessagesOvertake(boolean CONGEST_mode) {}
+
     @Override
     public Iterator<Message> iterator() {
         return msgs.iterator();
@@ -18,14 +20,6 @@ public class MessagesOvertake implements MessageQueue {
     @Override
     public void sendMessage(Message m) {
         msgs.add(m);
-        if (m.isDone()) {
-            return;
-        }
-        int count = 0;
-        for (Message mm : msgs)
-            if(mm == m)
-                count++;
-        assert count == 1;
         List<Message> mailbox = masterMailbox.get(m.recipient);
         if (mailbox == null) {
             mailbox = new ArrayList<>();
@@ -62,13 +56,11 @@ public class MessagesOvertake implements MessageQueue {
             while (mailbox.size() > 0) {
                 if (numMails > 0) {
                     int randomNum = Message.RAND.nextInt(0, numMails);
-                    Message toBeAdded = mailbox.get(randomNum);
-                    if (!toBeAdded.isDone()) {
-                        mails.add(toBeAdded);
-                        break;
-                    }
+                    Message toBeAdded = mailbox.remove(randomNum);
+                    assert !toBeAdded.isDone();
+                    mails.add(toBeAdded);
+                    break;
                 }
-                numMails = mailbox.size();
             }
         }
         return mails;

@@ -15,7 +15,5 @@ Decr 0->2
 
 Phan 2->3
 Phan 3->4
-Phan 4->1
-Ret 1->4
 deledge 1->2
 runall

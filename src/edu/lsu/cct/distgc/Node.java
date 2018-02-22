@@ -49,7 +49,7 @@ public class Node {
         }
     }
 
-    void postCheck(int sender, boolean action) {
+    void postCheck(int sender, boolean action,boolean isIncr) {
         int parent = -1;
         if (cd != null) {
             parent = cd.parent;
@@ -60,7 +60,8 @@ public class Node {
         // If this assertion triggers, it means
         // that return_to_parent() should have
         // been called.
-        if (ready() && cd != null && cd.parent > 0) {
+        boolean parent_sent_as_sender = (lstate.returned_to_sender && cd != null && cd.parent == sender);
+        if (!isIncr && ready() && cd != null && cd.parent > 0 && !parent_sent_as_sender) {
             assert false;
         }
         if (action) {
@@ -94,14 +95,18 @@ public class Node {
     }
 
     // \Procedure{OnEdgeCreation}{sender_weight,is_phantom_edge,sender_cid}
-    public void incr(int sender_weight, boolean is_phantom_edge, CID sender_cid) {
+    public void incr(int sender,int sender_weight, boolean is_phantom_edge, CID sender_cid) {
         if (is_phantom_edge) {
             if (cd == null) {
                 cd = new CollectionData(sender_cid);
+                cd.parent = sender;
             }
             cd.phantom_count++;
             if(CHK_COUNTS) assert cd.rcc >= 0;
             if(CHK_COUNTS) assert cd.phantom_count >= cd.rcc;
+            if(cd.phantom_count == 0 && cd.rcc == 0) {
+                cd = null;
+            }
         } else if (sender_weight < weight) {
             strong_count++;
         } else {
@@ -135,8 +140,9 @@ public class Node {
     // \Procedure{OnEdgeDeletion}{sender,sender_weight,is_phantom_edge,sender_cid}
     public void decr(int sender, int sender_weight, boolean phantom_flag, CID sender_cid) {
         if (phantom_flag) {
-            if(cd == null)
+            if(cd == null) {
                 cd = new CollectionData(sender_cid);
+            }
             cd.phantom_count--;
             if (sender_cid.equals(cd.getCid())) {
                 cd.rcc--;
@@ -254,7 +260,7 @@ public class Node {
         assert cd.wait_count == 0;
         assert cd.state == CollectorState.healthy_state || cd.state == CollectorState.build_state;
         cd.state = CollectorState.phantom_state;
-        for (Integer edge : edges) { // xx(For): each edge
+        for (Integer edge : edges) {
             Message m = new PhantomizeMessage(id, edge, lstate.old_weight, cd.getCid());
             m.queueMe();
             cd.wait_count++;
@@ -292,7 +298,7 @@ public class Node {
         assert cd.wait_count == 0;
         assert phantom_flag() : this.toString();
         cd.state = CollectorState.phantom_state;
-        for (Integer edge : edges) { // xx(For): each edge
+        for (Integer edge : edges) {
             Message m = new ClaimMessage(id, edge, cd.getCid());
             m.queueMe();
             cd.wait_count++;
@@ -339,7 +345,7 @@ public class Node {
         boolean incrRCC = !(CID.equals(cd.recoverCid, cd.getCid()));
         cd.state = CollectorState.recover_state;
         cd.recoverCid = cd.getCid();
-        for (Integer edge : edges) { // xx(For): each edge
+        for (Integer edge : edges) {
             cd.wait_count++;
             Message m = new RecoverMessage(id, edge, cd.getCid(), incrRCC);
             m.queueMe();
@@ -412,7 +418,7 @@ public class Node {
         boolean decrRCC = CID.equals(cd.recoverCid, cd.getCid());
         cd.recoverCid = null;
         cd.state = CollectorState.build_state;
-        for (Integer edge : edges) { // xx(For): for each
+        for (Integer edge : edges) {
             cd.wait_count++;
             Message m = new BuildMessage(id, edge, weight, cd.getCid(), cd.incrRCC, lstate.parent_was_set, decrRCC);
             m.queueMe();
@@ -448,13 +454,13 @@ public class Node {
     public void InfectAll() {
         assert phantom_flag();
         assert strong_count == 0 && weak_count == 0;
-        for (int i = 0; i < edges.size(); i++) { // xx(For): each edge
-            Integer edge = edges.get(i); // xskip
-            if (edge != null) { // xskip
+        for (int i = 0; i < edges.size(); i++) { // pseudo: for each edge
+            Integer edge = edges.get(i); // pseudo:
+            if (edge != null) { // pseudo:
                 Message m = new PlagueMessage(id, edge, cd.getCid());
                 m.queueMe();
-            } // xskip
-            del_edges.add(edge); // xx: set edge to null
+            } // pseudo:
+            del_edges.add(edge); // pseudo: set edge to null
         }
         edges.clear();
         if (strong_count == 0 && weak_count == 0 && cd.phantom_count == 0 && cd.wait_count == 0) {
@@ -555,13 +561,13 @@ public class Node {
     // rocedure{Return_to_sender}{start_over_cid}
     private void return_to_sender(int sender) {
         if (cd == null) {
-            // xx: pass
+            // pseudo: pass
         } else if (cd != null && lstate.original_parent != cd.parent && cd.parent == sender && sender != -1) {
-            // xx: pass
+            // pseudo: pass
         } else if (lstate.returned_to_parent && cd != null && cd.parent == sender) {
-            // xx: pass
+            // pseudo: pass
         } else if (sender == -1) {
-            // xx: pass
+            // pseudo: pass
         } else if (sender != lstate.sent_to_parent) {
             Message msg = new RetMessage(id, sender, null);
             msg.queueMe();
@@ -599,7 +605,7 @@ public class Node {
             cd.parent = sender;
             lstate.parent_was_set = true;
         } else if (sender == 0) {
-            // xx: pass
+            // pseudo: pass
             assert sender_cid == null;
         } else if (CID.equals(sender_cid, cd.getCid())) {
             lstate.in_collection_message = true;
@@ -663,6 +669,55 @@ public class Node {
         return true;
     }
 
+    // clearpage
+    // \Procedure{actionInitiator}{sender}
+    public void action_initiator(int sender) {
+        if (ready()) {
+            if (cd.state == CollectorState.healthy_state) {
+                if (!phantom_flag() && lstate.old_weight < weight || strong_count == 0) {
+                    PhantomizeAll(sender);
+                }
+            } else if (cd.state == CollectorState.phantom_state) {
+                if (strong_count > 0) {
+                    BuildAll(sender);
+                } else if (has_no_outgoing_edges() && weak_count == 0 && cd.phantom_count == 0) {
+                    cd.state = CollectorState.dead_state;
+                } else if(weak_count == 0) {
+                    RecoverAll();
+                }
+            } else if (cd.state == CollectorState.recover_state) {
+                if (strong_count == 0) {
+                    InfectAll();
+                } else {
+                    BuildAll(sender);
+                }
+            } else if (cd.state == CollectorState.infected_state) {
+                if (cd.phantom_count == 0 && strong_count == 0 && weak_count == 0) {
+                    cd.state = CollectorState.dead_state;
+                }
+            } else if (cd.phantom_count == 0) {
+                return_to_sender(sender);
+                if(strong_count == 0 && weak_count == 0) {
+                    PhantomizeAll(sender);
+                } else {
+                    cd = null;
+                }
+            }
+        } else if (phantom_flag()) {
+            if (cd.incrRCC) {
+                ClaimAll();
+            }
+        } else if (strong_count == 0) {
+            PhantomizeAll(sender);
+        } else if (!phantom_flag()) {
+            if (strong_count == 0) {
+                PhantomizeAll(sender);
+            } else { // pseudo:
+            }
+        } else { // pseudo:
+        }
+    }
+
     // \Procedure{action}{sender}
     public void action(int sender) {
         if (cd == null) {
@@ -673,51 +728,12 @@ public class Node {
         if (lstate.old_weight < weight) {
             PhantomizeAll(sender);
         } else if (is_initiator()) {
-            if (ready()) {
-                if (cd.state == CollectorState.healthy_state) {
-                    if (!phantom_flag() && lstate.old_weight < weight || strong_count == 0) {
-                        PhantomizeAll(sender);
-                    }
-                } else if (cd.state == CollectorState.phantom_state) {
-                    if (strong_count > 0) {
-                        BuildAll(sender);
-                    } else if (has_no_outgoing_edges() && weak_count == 0 && cd.phantom_count == 0) {
-                        cd.state = CollectorState.dead_state;
-                    } else if(weak_count == 0) {
-                        RecoverAll();
-                    }
-                } else if (cd.state == CollectorState.recover_state) {
-                    if (strong_count == 0) {
-                        InfectAll();
-                    } else {
-                        BuildAll(sender);
-                    }
-                } else if (cd.state == CollectorState.infected_state) {
-                    if (cd.phantom_count == 0 && strong_count == 0 && weak_count == 0) {
-                        cd.state = CollectorState.dead_state;
-                    }
-                } else if (cd.phantom_count == 0) {
-                    return_to_sender(sender);
-                    if(strong_count == 0 && weak_count == 0) {
-                        PhantomizeAll(sender);
-                    } else {
-                        cd = null;
-                    }
-                }
-            } else if (phantom_flag()) {
-                if (cd.incrRCC) {
-                    ClaimAll();
-                }
-            } else if (strong_count == 0) {
-                PhantomizeAll(sender);
-            } else if (!phantom_flag()) {
-                if (strong_count == 0) {
-                    PhantomizeAll(sender);
-                } else { // xskip
-                }
-            } else { // xskip
-            }
+            action_initiator(sender);
         } else if (cd.recv == CollectorState.healthy_state) {
+            if(cd.phantom_count == 0 && cd.rcc == 0 && cd.wait_count == 0) {
+                return_to_sender(sender);
+                cd = null;
+            }
         } else if (cd.recv == CollectorState.phantom_state) {
             if (!phantom_flag() && (lstate.old_weight < weight || strong_count == 0)) {
                 PhantomizeAll(sender);

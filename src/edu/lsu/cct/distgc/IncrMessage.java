@@ -21,7 +21,7 @@ public class IncrMessage extends Message implements HasAdversary {
 
     @Override
     public void runTask(Node n) {
-        n.incr(weight, phantom_flag, cid);
+        n.incr(sender, weight, phantom_flag, cid);
     }
 
     @Override

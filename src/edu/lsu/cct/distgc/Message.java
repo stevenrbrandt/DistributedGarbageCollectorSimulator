@@ -8,7 +8,8 @@ import java.util.Map;
 public abstract class Message {
 
     private static int msg_seq = 1;
-    public static boolean CONGEST_mode = false;
+    public final static boolean CONGEST_mode =
+        System.getProperty("CONGEST_mode", "no").toLowerCase().equals("yes");
     final int msg_id = msg_seq++;
     final int sender, recipient;
     private boolean done;
@@ -38,7 +39,7 @@ public abstract class Message {
         if (Here.VERBOSE) {
             System.out.printf("After %s: %s%n", sendStr(), r);
         }
-        r.postCheck(sender, action);
+        r.postCheck(sender, action, this instanceof IncrMessage);
         messageCount++;
     }
 
@@ -67,7 +68,7 @@ public abstract class Message {
      * The global message table. Once messages are enqueued, they run in a
      * completely random order.
      */
-    static MessageQueue msgs = new MessagesOvertake();
+    static MessageQueue msgs = new MessagesOvertake(Message.CONGEST_mode);
     // static MessageQueue msgs = new MessageDoNotOvertake();
 
     public String sendStr() {
@@ -222,12 +223,7 @@ public abstract class Message {
             System.out.println("id=" + node.id + " " + c);
             Message.checkCounts(counts, node);
         }
-        Here.bar("State of nodes");
-        for (Node node : Node.nodeMap.values()) {
-            if (node.cd == null || node.cd.state != CollectorState.dead_state) {
-                System.out.println(node);
-            }
-        }
+        stateOfNodes();
         for (Node node : Node.nodeMap.values()) {
             Node.Counts c = counts.get(node.id);
             if (node.cd != null) {
@@ -247,6 +243,15 @@ public abstract class Message {
                 assert c.strong == node.strong_count : "Bad strong: " + c + " != " + node;
                 assert c.weak == node.weak_count : "Bad weak: " + c + " != " + node;
                 assert c.marked;
+            }
+        }
+    }
+
+    static void stateOfNodes() {
+        Here.bar("State of nodes");
+        for (Node node : Node.nodeMap.values()) {
+            if (node.cd == null || node.cd.state != CollectorState.dead_state) {
+                System.out.println(node);
             }
         }
     }

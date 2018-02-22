@@ -8,13 +8,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public final class SimulationExecutor {
 
     Adversary adv = new Adversary();
-    public boolean CONGEST_mode = false;
 
     // Parses the input file and runs the simulation.
     public SimulationExecutor(String fileloc) throws Exception {
@@ -41,6 +42,8 @@ public final class SimulationExecutor {
         // Show summary information if we're done
         if(Message.msgs.size()==0)
             Message.runAll();
+        else
+            Message.stateOfNodes();
         pendingMessages();
     }
 
@@ -57,62 +60,74 @@ public final class SimulationExecutor {
             System.out.println("None");
     }
 
-    public void unSetSyncMode() {
-        Message.CONGEST_mode = false;
-        System.out.println("sync mode off");
-    }
-
-    public void actionFinished() {
-        //Message.CONGEST_mode = CONGEST_mode;
-    }
-
     // Parses CREATE <num> statements and performs necessary action.
-    public void createStatement(String[] tokens, int lineNo) {
-        assert tokens.length == 2 : " Line : " + lineNo + " error. Create statement syntax is CREATE <number> .";
-        int id = Integer.parseInt(tokens[1]);
-        assert id > 0 : " Line : " + lineNo + " error. Node Id cannot be less 0 or negative number. ";
-        roots.put(id, new Root(adv,id));
-        actionFinished();
+    public void createStatement(List<String> tokens, int lineNo) {
+        System.out.println("create: "+tokens);
+        assert tokens.size() >= 2 : " Line : " + lineNo + " error. Create statement syntax is CREATE <number> .";
+        Node prev = null;
+        for(int i=1;i<tokens.size();i++) {
+            int id = Integer.parseInt(tokens.get(i));
+            assert id > 0 : " Line : " + lineNo + " error. Node Id cannot be less 0 or negative number. ";
+            Node node = Node.nodeMap.get(id);
+            if(node == null) {
+                node = new Node(id);
+                if(prev != null)
+                    node.weight = prev.weight+1;
+            }
+            assert node.id == id;
+            if(i == 1) {
+                if(roots.get(id)==null)
+                    roots.put(id, new Root(adv,node));
+                else
+                    assert tokens.size() > 2 : "Create statement does nothing: line="+lineNo;
+            } else {
+                prev.createEdge(id,adv);
+            }
+
+            prev = node;
+        }
     }
 
     // Parses UNROOT <num> statements and performs necessary action.
-    public void unRootNode(String[] tokens, int lineNo) {
-        int id = Integer.parseInt(tokens[2]);
-        assert id > 0 : " Line : " + lineNo + " error. Node Id cannot be less 0 or negative number. ";
+    public void unRootNode(List<String> tokens, int lineNo) {
+        int id = Integer.parseInt(tokens.get(2));
+        assert id > 0 : " Line : " + lineNo + " error. Node Id cannot be less 0 or negative number. line="+lineNo;
         Root node = roots.get(id);
+        assert node != null : "No edge from 0->"+id+" exists: line="+lineNo;
+        assert node.get() != null : "Edge 0->"+id+" is already deleted: line="+lineNo;
         node.set(null,adv);
     }
 
-    public void processRunAll(String[] tokens, int lineNo) {
+    public void processRunAll(List<String> tokens, int lineNo) {
         Message.runAll();
     }
 
-	public void processCheckStat(String[] tokens, int lineNo) {
+	public void processCheckStat(List<String> tokens, int lineNo) {
 		Message.checkStat();
 	}
 
 
     // runmsg <nodeId> <MsgId> lines are parsed, checked and executed.
-	public void processMsgId(String[] tokens, int lineNo) {
-        assert tokens.length == 3 : "Line: " + lineNo
+	public void processMsgId(List<String> tokens, int lineNo) {
+        assert tokens.size() == 3 : "Line: " + lineNo
                 + " error. runmsg <nodeId> <msgId> is the syntaxt for the statement.";
-        int nodeId = Integer.parseInt(tokens[1]);
-        int msgId = Integer.parseInt(tokens[2]);
+        int nodeId = Integer.parseInt(tokens.get(1));
+        int msgId = Integer.parseInt(tokens.get(2));
         assert nodeId > 0 && msgId >= 0 : "Line: " + lineNo
         		+ " error. nodeId or msg Id must be positive number.";
         try {
             Message.runMsg(nodeId, msgId);
         } catch(NoSuchMessage nsm) {
-            throw new NoSuchMessage(String.format("%s %s %s",tokens[0],tokens[1],tokens[2]));
+            throw new NoSuchMessage(String.format("%s %s %s",tokens.get(0),tokens.get(1),tokens.get(2)));
         }
 	}
 
     // EDGE <source-node> <dest-node> lines are parsed, checked and executed.
-    public void createEdge(String[] tokens, int lineNo) {
-        assert tokens.length == 3 : "Line: " + lineNo
+    public void createEdge(List<String> tokens, int lineNo) {
+        assert tokens.size() == 3 : "Line: " + lineNo
                 + " error. EDGE <source-node> <dest-nod> is the syntaxt for the statement.";
-        int sourceNode = Integer.parseInt(tokens[1]);
-        int destNode = Integer.parseInt(tokens[2]);
+        int sourceNode = Integer.parseInt(tokens.get(1));
+        int destNode = Integer.parseInt(tokens.get(2));
         if(sourceNode == 0) {
             boolean found = false;
             Root r = roots.get(destNode);
@@ -141,36 +156,31 @@ public final class SimulationExecutor {
                 + " error. dest node cannot be root node (0) or negative number";
             Node source = roots.get(sourceNode).get();
             if(source == null)
-                throw new RuntimeException("Node is dead: "+sourceNode);
+                throw new RuntimeException("edge 0->"+sourceNode+" is required");
             Node dest = roots.get(destNode).get();
             if(dest == null)
-                throw new RuntimeException("Node is dead: "+destNode);
+                throw new RuntimeException("edge 0->"+destNode+" is required");
             source.createEdge(destNode,adv);
         } else {
             throw new RuntimeException("Source node cannot be negative. line="+lineNo);
         }
-        actionFinished();
-    }
-
-    public void CONGESTModeOn(String[] tokens, int lineNo) {
-        System.out.println("sync mode on");
-        Message.CONGEST_mode = true;
-        CONGEST_mode = true;
     }
 
     // DELEDGE <source-node> <dest-node> lines are parsed, checked and executed.
-    public void deleteEdge(String[] tokens, int lineNo) {
-        assert tokens.length == 3 : "Line: " + lineNo
-                + " error. EDGE <source-node> <dest-nod> is the syntaxt for the statement.";
-        int sourceNode = Integer.parseInt(tokens[1]);
-        int destNode = Integer.parseInt(tokens[2]);
+    public void deleteEdge(List<String> tokens, int lineNo) {
+        assert tokens.size() == 3 : "Line: " + lineNo
+                + " error. EDGE <source-node> <dest-nod> is the syntaxt for the statement: line="+lineNo;
+        int sourceNode = Integer.parseInt(tokens.get(1));
+        int destNode = Integer.parseInt(tokens.get(2));
         if(sourceNode == 0) {
             unRootNode(tokens,lineNo);
             return;
         }
         assert sourceNode > 0 && destNode > 0 : "Line: " + lineNo
-                + " error. source or dest node cannot be root node (0) or negative number";
-        Node source = roots.get(sourceNode).get();
+                + " error. source or dest node cannot be root node (0) or negative number: line="+lineNo;
+        Root root = roots.get(sourceNode);
+        assert root != null : "No edge from the root to node "+sourceNode+" exists: line="+lineNo;
+        Node source = root.get();
         if(source == null)
             throw new RuntimeException("No edge from a root to node id=" + sourceNode + ": line="+lineNo);
         boolean success = source.removeEdge(destNode, adv);
@@ -179,33 +189,34 @@ public final class SimulationExecutor {
 
     static Pattern noopPat = Pattern.compile("^\\s*(#.*|$)");
     static Pattern msgPat  = Pattern.compile("^\\s*(\\w+)\\s*(\\d+)\\s*->\\s*(\\d+)");
-    static Pattern parse   = Pattern.compile("^\\s*(\\w+)(?:\\s+(\\d+)(?:\\s*->\\s*(\\d+)|)|)");
+    static Pattern parse   = Pattern.compile("^\\s*(\\w+)(?:\\s+(\\d+)(?:\\s*->\\s*(?:\\d+))*|)");
+    static Pattern arrow   = Pattern.compile("->\\s*(\\d+)");
 
     // Parses individual lines and delegates the action to particular action
     // methods.
     public boolean parseAndPerform(String strLine, int lineNo) {
-        String[] tokens = {};
+        List<String> tokens = new ArrayList<>();
         Matcher mtok = parse.matcher(strLine);
         if(mtok.matches()) {
             int count = 0;
             for(int i=0;i<mtok.groupCount();i++)
                 if(mtok.group(i+1) != null)
                     count++;
-            tokens = new String[count];
             for(int i=0;i<count;i++) {
-                tokens[i] = mtok.group(i+1);
+                tokens.add(mtok.group(i+1));
+            }
+            Matcher amatch = arrow.matcher(strLine);
+            while(amatch.find()) {
+                tokens.add(amatch.group(1));
             }
         } else if(noopPat.matcher(strLine).matches()) {
-            tokens = new String[]{"#"};
+            tokens.add("#");
         } else {
             throw new RuntimeException(strLine);
         }
-        switch (tokens[0].toLowerCase()) {
+        switch (tokens.get(0).toLowerCase()) {
             case "#":
                 // Ignore line as comment.
-                break;
-            case "CONGESTmode":
-                CONGESTModeOn(tokens, lineNo);
                 break;
             case "create":
                 createStatement(tokens, lineNo);
@@ -225,15 +236,12 @@ public final class SimulationExecutor {
             case "deledge":
                 deleteEdge(tokens, lineNo);
                 break;
-            case "seed":
-                Message.RAND.setSeed(Integer.parseInt(tokens[1]));
-                break;
             default:
                 Message found = null;
                 for(Message msg : Message.msgs) {
-                    if(msg.shortName().equals(tokens[0])
-                            && msg.sender == Integer.parseInt(tokens[1])
-                            && msg.recipient == Integer.parseInt(tokens[2]))
+                    if(msg.shortName().equals(tokens.get(0))
+                            && msg.sender == Integer.parseInt(tokens.get(1))
+                            && msg.recipient == Integer.parseInt(tokens.get(2)))
                     {
                         if(found != null) throw new RuntimeException("Non-unique message specifier: "+strLine+" at line no: "+lineNo);
                         found = msg;
