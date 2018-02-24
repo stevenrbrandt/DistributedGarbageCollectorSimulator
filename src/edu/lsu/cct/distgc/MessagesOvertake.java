@@ -1,38 +1,56 @@
 package edu.lsu.cct.distgc;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Iterator;
 
 public class MessagesOvertake implements MessageQueue {
 
-    List<Message> msgs = new ArrayList<>();
-    HashMap<Integer, List<Message>> masterMailbox = new HashMap<>();
+    List<Message> msgs;
+    Map<Integer, List<Message>> masterMailbox;
 
-    public MessagesOvertake(boolean CONGEST_mode) {}
+    public MessagesOvertake(boolean congest) {
+        if(congest)
+            masterMailbox = new HashMap<>();
+        else
+            msgs = new ArrayList<>();
+    }
 
     @Override
     public Iterator<Message> iterator() {
         return msgs.iterator();
     }
 
-    @Override
-    public void sendMessage(Message m) {
+    final static int ADV_PRIORITY = Integer.parseInt(Props.get("adv-priority"));
+
+    static void addRandom(List<Message> msgs,Message m) {
         msgs.add(m);
-        List<Message> mailbox = masterMailbox.get(m.recipient);
-        if (mailbox == null) {
-            mailbox = new ArrayList<>();
-            mailbox.add(m);
-            masterMailbox.put(m.recipient, mailbox);
-        } else {
-            mailbox.add(m);
+        int n = msgs.size();
+        if(ADV_PRIORITY > 0 && m instanceof HasAdversary) {
+           if(n > ADV_PRIORITY) n = ADV_PRIORITY;
         }
+        int n1 = msgs.size() - Message.RAND.nextInt(n) - 1;
+        int n2 = msgs.size() - 1;
+        Message m1 = msgs.get(n1);
+        Message m2 = msgs.get(n2);
+        msgs.set(n1,m2);
+        msgs.set(n2,m1);
     }
 
-    void removeMsg(Message m) {
-        msgs.remove(m);
-        masterMailbox.get(m.recipient).remove(m);
+    @Override
+    public void sendMessage(Message m) {
+        if(msgs != null) {
+            addRandom(msgs,m);
+        } else {
+            List<Message> mailbox = masterMailbox.get(m.recipient);
+            if (mailbox == null) {
+                mailbox = new ArrayList<>();
+                masterMailbox.put(m.recipient, mailbox);
+            }
+            addRandom(mailbox,m);
+        }
     }
 
     @Override
@@ -40,29 +58,27 @@ public class MessagesOvertake implements MessageQueue {
         if (msgs.isEmpty()) {
             return null;
         }
-        int n = Message.RAND.nextInt(msgs.size());
-        Message m = msgs.get(n);
-        removeMsg(m);
-        return m;
+        return msgs.remove(msgs.size()-1);
     }
 
     @Override
     public List<Message> nextRoundToRun() {
         List<Message> mails = new ArrayList<>();
+        Here.log();
         for (Integer nodeId : masterMailbox.keySet()) {
             List<Message> mailbox = masterMailbox.get(nodeId);
             assert mailbox != null : "Mailbox cannot be null";
             int numMails = mailbox.size();
             while (mailbox.size() > 0) {
                 if (numMails > 0) {
-                    int randomNum = Message.RAND.nextInt(0, numMails);
-                    Message toBeAdded = mailbox.remove(randomNum);
+                    Message toBeAdded = mailbox.remove(numMails-1);
                     assert !toBeAdded.isDone();
                     mails.add(toBeAdded);
-                    break;
                 }
+                numMails = mailbox.size();
             }
         }
+        Here.log(mails);
         return mails;
     }
 
@@ -70,9 +86,11 @@ public class MessagesOvertake implements MessageQueue {
     public Message getMessage(int nodeId, int msgId) {
     	List<Message> mailbox = masterMailbox.get(nodeId);
         assert mailbox != null : "Mailbox cannot be null";
-        for (Message msg:mailbox) {
+        Iterator<Message> miter = mailbox.iterator();
+        while(miter.hasNext()) {
+            Message msg = miter.next();
         	if (msg.msg_id == msgId) {
-                removeMsg(msg);
+                miter.remove();
         		return msg;
         	}
         }
@@ -82,7 +100,15 @@ public class MessagesOvertake implements MessageQueue {
 
     @Override
     public int size() {
-        return msgs.size();
+        if(msgs != null) {
+            return msgs.size();
+        } else {
+            int size = 0;
+            for(List<Message> mailbox : masterMailbox.values()) {
+                size += mailbox.size();
+            }
+            return size;
+        }
     }
 
 }

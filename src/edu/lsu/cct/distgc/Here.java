@@ -7,7 +7,7 @@ package edu.lsu.cct.distgc;
  */
 public class Here {
 
-    public final static boolean VERBOSE = System.getProperty("verbose", "no").equals("yes");
+    public final static boolean VERBOSE = Props.get("verbose").equals("yes");
 
     public static void log(Object o) {
         if (!VERBOSE) {

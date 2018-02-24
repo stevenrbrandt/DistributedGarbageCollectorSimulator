@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public abstract class Message {
 
     private static int msg_seq = 1;
     public final static boolean CONGEST_mode =
-        System.getProperty("CONGEST_mode", "no").toLowerCase().equals("yes");
+        Props.get("CONGEST_mode").equals("yes");
     final int msg_id = msg_seq++;
     final int sender, recipient;
     private boolean done;
@@ -52,11 +53,11 @@ public abstract class Message {
         return nm.substring(b, e);
     }
 
-    final static RandomSeq RAND = new RandomSeq();
+    final static Random RAND = new Random();
 
     static {
         int s = RAND.nextInt(10000);
-        String seedStr = System.getProperty("seed");
+        String seedStr = Props.get("seed");
         if (seedStr != null) {
             s = Integer.parseInt(seedStr);
         }

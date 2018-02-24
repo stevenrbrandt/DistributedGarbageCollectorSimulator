@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class Node {
 
-    final boolean CHK_COUNTS = System.getProperty("CheckCounts","no").equals("yes");
+    final boolean CHK_COUNTS = Props.get("CheckCounts").equals("yes");
     static Map<Integer, Node> nodeMap = new HashMap<>();
 
     LocalState lstate = new LocalState();

@@ -184,7 +184,7 @@ public class Main {
     }
 
     static void shuffle(List<Root> roots) {
-        if (System.getProperty("shuffle", "yes").equalsIgnoreCase("yes")) {
+        if (Props.get("shuffle").equals("yes")) {
             for (int i = roots.size() - 1; i > 0; i--) {
                 int n = Message.RAND.nextInt(i + 1);
                 Root r1 = roots.get(i);
@@ -237,9 +237,9 @@ public class Main {
         } catch (AssertionError ae) {
         }
         System.out.printf("Congest Mode=%s%n", Message.CONGEST_mode ? "on" : "off");
-        String test = System.getProperty("test", "cycle");
-        String size = System.getProperty("size", "2");
-        String fileloc = System.getProperty("fileloc", "file-input-format.txt");
+        String test = Props.get("test");
+        String size = Props.get("size");
+        String fileloc = Props.get("fileloc");
         if (test.equals("file-input")) {
             System.out.println("fileloc=" + fileloc);
         }
@@ -276,7 +276,8 @@ public class Main {
         } else if (test.equals("randm1")) {
             RandTest(sizeI, true);
         } else {
-            assert false;
+            System.err.println("Unknown test type: "+test);
+            System.exit(2);
         }
     }
 }
