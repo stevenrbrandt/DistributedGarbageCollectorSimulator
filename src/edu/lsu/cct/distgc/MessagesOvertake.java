@@ -20,7 +20,15 @@ public class MessagesOvertake implements MessageQueue {
 
     @Override
     public Iterator<Message> iterator() {
-        return msgs.iterator();
+        if(msgs == null) {
+            List<Message> list = new ArrayList<>();
+            for(List<Message> mailbox : masterMailbox.values()) {
+                list.addAll(mailbox);
+            }
+            return list.iterator();
+        } else {
+            return msgs.iterator();
+        }
     }
 
     final static int ADV_PRIORITY = Integer.parseInt(Props.get("adv-priority"));

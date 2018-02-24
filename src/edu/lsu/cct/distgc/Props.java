@@ -23,8 +23,8 @@ public class Props {
         propDefs.put("CONGEST_mode",new PropInfo("(yes|no)","yes"));
         propDefs.put("shuffle",new PropInfo("(yes|no)","yes"));
         propDefs.put("verbose",new PropInfo("(yes|no)","no"));
-        propDefs.put("test",new PropInfo("\\w+","cycle"));
-        propDefs.put("fileloc",new PropInfo("\\w+","test1.txt"));
+        propDefs.put("test",new PropInfo("[\\w-]+","cycle"));
+        propDefs.put("fileloc",new PropInfo(".*","test1.txt"));
         propDefs.put("seed",new PropInfo("\\d+"));
         propDefs.put("size",new PropInfo("\\d+","2"));
         propDefs.put("adv-priority",new PropInfo("\\d+","0"));
