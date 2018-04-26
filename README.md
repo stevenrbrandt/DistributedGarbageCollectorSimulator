@@ -21,6 +21,8 @@ Running from the command line:
 ** -DVerbose=yes - If one is only interested in the answer and not the intermediate steps, this setting is fine.
 
 Syntax for the test file:
+```
  create NODENUM
  edge NODENUM-&gt;NODENUM
  deledge NODENUM-&gt;NODENUM
+```
