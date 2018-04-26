@@ -41,3 +41,4 @@ Recov 2->1
 # a root edge for this. Create one.
 #edge 0->1
 #edge 4->1
+runall

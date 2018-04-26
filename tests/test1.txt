@@ -5,3 +5,4 @@ edge 2->1
 deledge 0->2
 deledge 1->2
 runall
+runall

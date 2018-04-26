@@ -11,3 +11,4 @@ deledge 0->3
 deledge 0->2
 deledge 1->3
 runall
+runall

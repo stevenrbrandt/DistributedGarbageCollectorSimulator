@@ -1,4 +1,4 @@
-seed 3082
+
 
 # Test: Create an edge to a phantomized node
 # First create a cycle
@@ -38,4 +38,5 @@ Phan 2->1
 # a root edge for this. Create one.
 edge 0->1
 edge 1->4
+runall
 runall

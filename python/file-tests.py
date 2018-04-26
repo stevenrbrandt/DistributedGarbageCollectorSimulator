@@ -14,7 +14,7 @@ class Job:
     def run(self,wid):
         if wid==0:
             sys.stdout.write('Test %s seed=%d\n' % (self.file_name,self.seed))
-        cmd = 'java -ea -DCheckCounts=no -Dverbose=yes -Dseed=%d -Dfileloc=/tmp/%s -Dtest=file-input -cp build/classes edu.lsu.cct.distgc.Main > worker%d.out 2>&1' % (self.seed,self.file_name,wid)
+        cmd = 'java -ea -DCheckCounts=no -Dverbose=yes -Dseed=%d -Dfileloc=%s -Dtest=file-input -cp build/classes edu.lsu.cct.distgc.Main > worker%d.out 2>&1' % (self.seed,self.file_name,wid)
         rc = os.system(cmd)
         if rc != 0:
             sys.stderr.write("Died '%s' seed=%d, worker=%d\n" % (self.file_name,self.seed,wid))
@@ -24,12 +24,13 @@ class Job:
             fw.close()
             os.kill(os.getpid(),9)
 
-for fn in os.listdir("."):
-    if re.match(r'^test.*\.txt$',fn):
+for bfn in os.listdir("tests"):
+    fn = "tests/" + bfn
+    if re.match(r'test.*\.txt$',fn):
         c = open(fn).read()
         c = re.sub('(?m)^\s*seed\s+(\d+)','',c)
         c += 'runall\n'
-        fw = open('/tmp/%s' % fn,"w")
+        fw = open('%s' % fn,"w")
         fw.write(c)
         fw.close()
         files += [fn]

@@ -1,4 +1,4 @@
-seed 19
+
 create 1
 create 2
 create 3
@@ -33,4 +33,5 @@ deledge 0->2
 edge 0->4
 deledge 0->3
 deledge 4->5
+runall
 runall
