@@ -1,0 +1,41 @@
+seed 3082
+
+# Test: Create an edge to a phantomized node
+# First create a cycle
+create 1
+create 2
+
+edge 1->2
+edge 2->1
+
+# Next, create a linked list: 3->4. Cut the
+# root ref to 4 and runall. This will raise
+# the weight of node 4 to 2.
+create 3
+create 4
+edge 3->4
+deledge 0->4
+runall
+
+# Now create an edge to the cycle from 4
+# To do this, we need a root edge to 4.
+# Creating one won't change 4's weight.
+edge 0->4
+edge 4->1
+
+# Now we can cut edges 0->2 and 0->3 and
+# let the cycle collect. Manually run the
+# minimum number of messages to get the
+# cycle phantomized.
+deledge 0->2
+Decr 0->2
+deledge 0->1
+Decr 0->1
+Phan 1->2
+Phan 2->1
+
+# Now create an edge from 4->1. We need
+# a root edge for this. Create one.
+edge 0->1
+edge 1->4
+runall
