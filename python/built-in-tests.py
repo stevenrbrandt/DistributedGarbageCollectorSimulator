@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 import os, re, sys, queue, threading
 
+# Make this line true if you're willing to
+# wait a while and watch the full test suite run.
 big_machine = False
+
 if big_machine:
     workers = 40
     seeds_per_test = 1000
