@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 
 public abstract class Message {
 
@@ -103,8 +106,50 @@ public abstract class Message {
         if (m == null) {
             return false;
         }
+        fireBefore(m);
         m.run();
+        fireAfter(m);
+        waitFor();
         return true;
+    }
+    
+    private static List<MessageListener> watchers = new ArrayList<>();
+    public static synchronized void addListener(MessageListener ml) {
+        watchers.add(ml);
+    }
+    private static synchronized void fireBefore(Message m) {
+        for(MessageListener ml : watchers) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override public void run() {
+                    ml.before(m);
+                }
+            });
+        }
+    }
+    private static synchronized void fireAfter(Message m) {
+        for(MessageListener ml : watchers) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override public void run() {
+                    ml.after(m);
+                }
+            });
+        }
+    }
+    private static synchronized void waitFor() {
+        try {
+            while(true) {
+                boolean ready = true;
+                for(MessageListener ml : watchers) {
+                    if(!ml.ready()) {
+                        ready = false;
+                    }
+                }
+                if(ready)
+                    return;
+                Message.class.wait(10);
+            }
+        } catch (InterruptedException ex) {
+        }
     }
 
     static int timeStep = 1;
@@ -123,7 +168,10 @@ public abstract class Message {
             }
             roundCount++;
             for (Message msg : mails) {
+                fireBefore(msg);
                 msg.run();
+                fireAfter(msg);
+                waitFor();
             }
             return true;
         }
