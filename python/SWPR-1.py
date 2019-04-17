@@ -79,6 +79,9 @@ class Node:
     def __init__(self,weight):
         global id_seq, nodes
         id_seq += 1
+
+        # Overhead for SWPR-1:
+        #=====================
         self.id = id_seq
         self.weight = weight + 1
         self.max_weight = weight
@@ -86,11 +89,23 @@ class Node:
         self.weak_count = 0
         self.wait_count = 0
         self.phantom_count = 0
+        # The state of the node essentially
+        # matches the type of message most
+        # recently sent by send_all().
         self.state = "healthy"
-        self.edges = []
-        self.deledges = []
         self.parent = -1
+
+        # Overhead for Mark and Sweep:
+        #=============================
+        # The list of edges deleted by SWPR-1
+        # is maintained so that Mark & Sweep
+        # can verify the work.
+        self.deledges = []
         self.mark = False
+
+        # Properties of the node
+        self.edges = []
+
         nodes[self.id] = self
 
     def __str__(self):
@@ -173,7 +188,6 @@ class Node:
 
     # ===START OF ALGO===
     def decr(self,weight):
-        global msgs
         if weight < self.weight:
             self.strong_count -= 1
             assert self.strong_count >= 0
